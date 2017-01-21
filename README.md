@@ -5,9 +5,15 @@
 ### コントローラのメニュー表示
 
 コントローラからできる操作を増やすため、コントローラのトラックパッドにメニューを表示する機能を実装しました。
+
+![コントローラメニュー](http://i.imgur.com/u2Za50vh.jpg)
+
 メニューの項目は独自に実装する必要がありますが、簡単に追加できるフレームワークを実装しているので、他のプラグインからでも難なく使えるかと思います。
 
 ### GUIパネル
+
+![GUIパネル](http://i.imgur.com/vpLTZVah.jpg)
+※画像中にあるAddModsSlider,VibeYourMaidは本プラグインとは関係ありません。
 
 GripMovePluginと同じGUIパネルを実装しています。GripMovePluginと違うのは、旧GUIをゲームGUIと同じ1枚のパネルに表示しているところです。
 
@@ -45,6 +51,8 @@ GripMovePluginと同じGUIパネルを実装しています。GripMovePluginと�
 
 公式のMOVE-DIRモードは廃止して、代わりにワープによる移動を実装しました。
 
+![新MOVEモード](http://i.imgur.com/RVkTnJth.jpg)
+
 MOVEモードにしてトラックパッドを押すと白い球体が出現します。白い球体が移動先を示すポインタとなります。
 白い球体は放物線軌道で計算していますが、放物線軌道の描画はサボっているので見えません。
 地面の高さはトラックパッド左を押してるときはプレイヤーの実際の部屋の床の高さ、右を押してるときはゲーム内背景のy=0の高さとなります。
@@ -64,7 +72,7 @@ GripMovePluginを入れている場合は、追加でCM3D2.VRMenuWithGripMove.Pl
 
 ## メニューからキー入力をしたい
 
-C#のコードを書く必要がありますが、簡単にできます（多分）。CM3D2.VRMenu.MyKeyInput.csを見てください。
+C#のコードを書く必要がありますが、簡単にできます（多分）。[CM3D2.VRMenu.MyKeyInput.cs](https://github.com/nekopanda/CM3D2.VRMenu.Plugin/blob/master/CM3D2.VRMenu.MyKeyInput/CM3D2.VRMenu.MyKeyInput.cs)を見てください。
 このファイルは他のプラグイン等には依存していないので、単体でAutoCompileできると思います。
 
 ## 制限
