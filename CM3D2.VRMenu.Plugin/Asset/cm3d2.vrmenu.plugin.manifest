@@ -1,0 +1,21 @@
+ManifestFileVersion: 0
+CRC: 3126263239
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 2509467f0fd1cc0cccb16611d1702950
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 1094ce4a8b63a0cc7870d736bb694a93
+HashAppended: 0
+ClassTypes:
+- Class: 48
+  Script: {instanceID: 0}
+Assets:
+- Assets/Label.shader
+- Assets/UI-DefaultFont.shader
+- Assets/UI-Default.shader
+- Assets/UIBlend.shader
+- Assets/Pointer.shader
+- Assets/Color.shader
+Dependencies: []
