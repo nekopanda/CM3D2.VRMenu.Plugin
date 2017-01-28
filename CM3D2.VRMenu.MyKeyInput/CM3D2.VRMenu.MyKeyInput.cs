@@ -9,7 +9,12 @@ using UnityInjector.Attributes;
 
 namespace CM3D2.VRMenu.MyKeyInput
 {
-    [PluginName("VRMenuMyKeyInput"), PluginVersion("0.0.0.1")]
+    [
+        PluginFilter("CM3D2VRx64"),
+        PluginFilter("CM3D2OHVRx64"), 
+        PluginName("VRMenuMyKeyInput"),
+        PluginVersion("0.0.0.1")
+    ]
     public class VRMenuMyKeyInput : ExPluginBase
     {
         private void Start()

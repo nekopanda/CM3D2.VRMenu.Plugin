@@ -91,24 +91,6 @@ namespace CM3D2.VRMenuPlugin
 
     public static class Util
     {
-        public static void RegisterLogCallback()
-        {
-            Application.logMessageReceived += Application_logMessageReceived;
-        }
-
-        private static void Application_logMessageReceived(string condition, string stackTrace, LogType type)
-        {
-            switch(type)
-            {
-                case LogType.Error:
-                case LogType.Assert:
-                case LogType.Exception:
-                //case LogType.Warning:
-                    Console.WriteLine("[" + type + "] " + condition);
-                    Console.WriteLine(stackTrace);
-                    break;
-            }
-        }
 
         public static Transform SearchInChildren(Transform parent, string name, int depth, int maxdepth)
         {

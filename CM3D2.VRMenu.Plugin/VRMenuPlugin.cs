@@ -140,9 +140,6 @@ namespace CM3D2.VRMenuPlugin
                 Log.Out(this.GetType().AssemblyQualifiedName);
                 DontDestroyOnLoad(gameObject);
 
-                // 例外の詳細情報を吐かせる
-                Util.RegisterLogCallback();
-
                 instance_ = this;
 
                 // 設定メニューに追加
