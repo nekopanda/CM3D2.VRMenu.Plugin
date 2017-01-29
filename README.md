@@ -67,7 +67,7 @@ GripMovePluginを入れていると撮影モードで使用可能になるモー
 CM3D2.VRMenu.MyKeyInput.dllを入れると、「VibeYourMaid」と「デスクトップスクリーン」が追加されます。
 
 ### ITEM
-コントローラをペンライトやおもちゃに変化させます。
+コントローラをペンライトやおもちゃに変化させます。公式のITEMモードと同じです。
 
 ### MENU
 設定などのメニューです。VRMenuプラグインの設定は下で説明します。
@@ -104,8 +104,17 @@ C#のコードを書く必要がありますが、簡単にできます（多分
 
 # インストール
 
-CM3D2.VRMenu.Plugin.dllをUnityInjectorフォルダに、CM3D2.VRMenu.Plugin.Patcher.dllをしばりすのLoaderフォルダに入れてください。
-GripMovePluginを入れている場合は、追加でCM3D2.VRMenuWithGripMove.Plugin.dllをUnityInjectorフォルダに入れてください。でないと、競合して変な動きをします。
+[Releaseページ](https://github.com/nekopanda/CM3D2.VRMenu.Plugin/releases)にあるVRMenuPlugin.zipのSybarisフォルダをコピーすればOK
+
+最小構成で使いたい場合は、 `CM3D2.VRMenu.Plugin.Patcher.dll` と `CM3D2.VRMenu.Plugin.dll` だけあれば使えます。他の各ファイルは以下の通り
+
+| DLL | 説明 |
+|:----------|:-----------|
+| CM3D2.VRMenuWithGripMove.Plugin.dll | GripMovePluginと共存させる場合は必須です。GripMovePluginのIKモードを追加します。 |
+| CM3D2.VRMenu.MyKeyInput.dll | メニューを追加するサンプルです。なくてもOKです。これで追加されるメニューのうち「マイメニュー」はキー設定が合っていないと思うのでそのままでは使えません。 |
+| CM3D2.LightPhysics.Patcher.dll | LightPhysicsプラグイン。フレームレートを改善するプラグインです。デフォルトでは無効の状態になっていて、VRMenuプラグインから有効にします。 |
+| CM3D2.LightPhysics.Managed.dll | LightPhysicsプラグインの一部です。 |
+
 
 # 開発者向け
 ### ビルド方法
