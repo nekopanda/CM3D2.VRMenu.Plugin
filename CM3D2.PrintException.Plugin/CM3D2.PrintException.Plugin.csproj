@@ -31,8 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="PluginExt">
-      <HintPath>..\..\CM3D2.VRMenu.Plugin.Dev\CMLibrary\PluginExt.dll</HintPath>
+    <Reference Include="PluginExt, Version=0.3.0.33790, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\CMLibrary\PluginExt.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -40,11 +41,13 @@
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="UnityEngine">
-      <HintPath>..\..\CM3D2.VRMenu.Plugin.Dev\CMLibrary\UnityEngine.dll</HintPath>
+    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\CMLibrary\UnityEngine.dll</HintPath>
     </Reference>
-    <Reference Include="UnityInjector">
-      <HintPath>..\..\CM3D2.VRMenu.Plugin.Dev\CMLibrary\UnityInjector.dll</HintPath>
+    <Reference Include="UnityInjector, Version=1.0.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\CMLibrary\UnityInjector.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
