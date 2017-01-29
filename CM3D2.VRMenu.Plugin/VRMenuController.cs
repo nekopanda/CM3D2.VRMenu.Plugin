@@ -19,6 +19,17 @@ namespace CM3D2.VRMenuPlugin
         void OnGripReleased();
     }
 
+    public enum GripTarget
+    {
+        None,
+        GUI,
+        Maid,
+        Object,
+        Handler,
+        World,
+        SpawnItem
+    }
+
     // 各コントローラに最初にアタッチされるコンポーネント
     // コントローラの調整やメニューの表示などの実際の作業のトップコンポーネント
     public abstract class VRMenuController : MonoBehaviour
@@ -172,19 +183,19 @@ namespace CM3D2.VRMenuPlugin
             // 表示させたくない人が複数いるのでカウントしておく
             if(suppress)
             {
-                Log.Out("Supress count incremented");
+                //Log.Out("Supress count incremented");
                 if(supressCount++ == 0)
                 {
-                    Log.Out("Pointer DISBLED");
+                    //Log.Out("Pointer DISBLED");
                     PointerEnabled = false;
                 }
             }
             else
             {
-                Log.Out("Supress count decremented");
+                //Log.Out("Supress count decremented");
                 if (--supressCount == 0)
                 {
-                    Log.Out("Pointer ENABLED");
+                    //Log.Out("Pointer ENABLED");
                     PointerEnabled = true;
                 }
             }
@@ -199,18 +210,14 @@ namespace CM3D2.VRMenuPlugin
         }
         private TouchPadState touchPadState = TouchPadState.Free;
 
-        private enum GripTarget
-        {
-            None, GUI, Maid,
-            Object, Handler, World
-        }
         private static readonly Color[] GripTargetColorMap = new Color[] {
-            new Color(0,0,1,0.2f), // blue
-            new Color(1,1,1,0.2f), // white
-            new Color(1,1,0,0.2f), // yellow
-            new Color(1,1,0,0.2f), // yellow
-            new Color(0,1,0,0.2f), // green
-            new Color(0,0,1,0.2f)  // blue
+            new Color(0,0,1,0.2f), // None: blue
+            new Color(1,1,1,0.3f), // GUI: white
+            new Color(1,1,0,0.2f), // Maid: yellow
+            new Color(0,1,0,0.2f), // Object: green
+            new Color(1,1,0,0.5f), // Handler: yellow
+            new Color(0,0,1,0.2f), // World: blue
+            new Color(1,1,0,0.5f)  // SpawnItem: green
         };
         private static readonly float NormalPointerAlpha = 0.2f;
         private static readonly float TransparentPointerAlpha = 0.0f;
@@ -234,6 +241,21 @@ namespace CM3D2.VRMenuPlugin
         private bool isCursorInWindow_;
         private bool isTouchingGUI;
 
+        // GUIタッチステートまとめ
+        // isTouchingGUI: ポインタがGUI範囲内にあるか？
+        // pressedWithTouchingGUI: ドラッグ中なのでGUIモード継続中
+        // touchingOffGUICo != null: ポインタはGUIから離れたがまだGUIモード中
+        // 
+        // ポインタの色は isTouchingGUI
+        // マウスポインタ移動は isTouchingGUI || pressedWithTouchingGUI
+        // クリック判定(=GUIモード)は isTouchingGUI || pressedWithTouchingGUI || touchingOffGUICo != null
+
+        public bool IsGUIMode {
+            get {
+                return isTouchingGUI || pressedWithTouchingGUI || touchingOffGUICo != null;
+            }
+        }
+
         private ReferenceCountSet<Transform> touchingObjects =
             new ReferenceCountSet<Transform>();
 
@@ -255,7 +277,7 @@ namespace CM3D2.VRMenuPlugin
                 // GUIQuadを表示（左右のコントローラでココは2回呼ばれるがGUIQuadは1枚しか作らないことに注意）
                 if (GUIQuad.Instance == null)
                 {
-                    Log.Out("Call GUIQuad.Create");
+                    Log.Debug("Call GUIQuad.Create");
                     guiQuad = GUIQuad.Create();
                     guiQuad.gameObject.transform.parent = VRMenuPlugin.Instance.PlayRoom.transform;
 
@@ -295,7 +317,7 @@ namespace CM3D2.VRMenuPlugin
             }
             catch(Exception e)
             {
-                Log.Out(e);
+                Log.Debug(e);
             }
         }
 
@@ -308,7 +330,7 @@ namespace CM3D2.VRMenuPlugin
                     bool ignore = Physics.GetIgnoreLayerCollision(i, j);
                     if(ignore)
                     {
-                        Log.Out("IGNORE " + i + " -> " + j);
+                        Log.Debug("IGNORE " + i + " -> " + j);
                     }
                 }
             }
@@ -400,7 +422,8 @@ namespace CM3D2.VRMenuPlugin
             }
             else
             {
-                Transform target = Util.GetGripTarget(other.gameObject);
+                GripTarget targetType;
+                Transform target = Util.GetGripTarget(other.gameObject, out targetType);
                 if(target != null)
                 {
                     // １つのtargetに対して複数の子GameObjectが接触することがある
@@ -449,7 +472,8 @@ namespace CM3D2.VRMenuPlugin
             }
             else
             {
-                Transform target = Util.GetGripTarget(other.gameObject);
+                GripTarget targetType;
+                Transform target = Util.GetGripTarget(other.gameObject, out targetType);
                 if (target != null)
                 {
                     touchingObjects.Remove(target);
@@ -477,7 +501,7 @@ namespace CM3D2.VRMenuPlugin
                 //beam();
 
                 // GUI操作中は非表示にする
-                Menu.MenuVisible = !(isTouchingGUI || touchingOffGUICo != null);
+                Menu.MenuVisible = !IsGUIMode;
                 Menu.updateMenu();
 
                 updatePointerPosition();
@@ -494,7 +518,7 @@ namespace CM3D2.VRMenuPlugin
             }
             catch (Exception e)
             {
-                Log.Out(e);
+                Log.Debug(e);
             }
         }
 
@@ -535,8 +559,8 @@ namespace CM3D2.VRMenuPlugin
         private void updateTouchPadState()
         {
             TouchPadState newState;
-            // GUIにタッチしてなくてもドラック中はGUIモードを維持
-            if (isTouchingGUI || pressedWithTouchingGUI || touchingOffGUICo != null)
+
+            if (IsGUIMode)
             {
                 newState = TouchPadState.GUI;
             }
@@ -575,7 +599,7 @@ namespace CM3D2.VRMenuPlugin
                 tmp = nextGripTarget;
             }
 
-            if (isTouchingGUI || AlwaysClickableOnGUI)
+            if (IsGUIMode || AlwaysClickableOnGUI)
             {
                 isCursorInWindow_ = isCursorInWindow();
                 if (isCursorInWindow_ == false)
@@ -595,7 +619,7 @@ namespace CM3D2.VRMenuPlugin
         {
             if(guiQuad != null)
             {
-                Log.Out("GUI位置をリセット");
+                Log.Debug("GUI位置をリセット");
                 // コントローラの20cm前
                 guiQuad.transform.position = transform.TransformPoint(new Vector3(0, 0, 0.2f));
                 // 45度上を向かせる
@@ -666,9 +690,9 @@ namespace CM3D2.VRMenuPlugin
                     }
                     pressWaitAMomentCo = StartCoroutine(pressWaitAMoment());
                 }
-                else if(isTouchingGUI)
+                else if(IsGUIMode)
                 {
-                    Log.Out("マウスカーソルがゲームウィンドウ上にないためクリックできません！");
+                    Log.Debug("マウスカーソルがゲームウィンドウ上にないためクリックできません！");
                 }
             }
             else if (leftUp || rightUp)
@@ -805,18 +829,34 @@ namespace CM3D2.VRMenuPlugin
                 }
             }
 
-            if (ControllerConfig.EnableGripObject)
+            if (ControllerConfig.EnableGripMaid || ControllerConfig.EnableGripObject)
             {
                 foreach (var t in touchingObjects.Items)
                 {
-                    if (grippingList.Contains(t.transform))
+                    if (grippingList.Contains(t))
                     {
                         // 既に掴んでいるオブジェクトは除外
                         continue;
                     }
 
-                    nextGripTarget = GripTarget.Object;
-                    nextGripObject = t.transform;
+                    // タイプを取得
+                    Util.GetGripTarget(t.gameObject, out nextGripTarget);
+                    if(nextGripTarget == GripTarget.Maid)
+                    {
+                        if(ControllerConfig.EnableGripMaid == false)
+                        {
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        if(ControllerConfig.EnableGripObject == false)
+                        {
+                            continue;
+                        }
+                    }
+
+                    nextGripObject = t;
                     return;
                 }
             }
@@ -843,7 +883,8 @@ namespace CM3D2.VRMenuPlugin
                     applyMove(guiQuad.gameObject.transform, false, false, false);
                     break;
                 case GripTarget.Object:
-                    //case GripTarget.Maid:
+                case GripTarget.Maid:
+                case GripTarget.SpawnItem:
                     applyMove(currentGripObject as Transform, false, isLockAxis, false);
                     break;
                 case GripTarget.World:
@@ -853,8 +894,8 @@ namespace CM3D2.VRMenuPlugin
             }
             catch(Exception e)
             {
-                Log.Out("EXC 1");
-                Log.Out(e);
+                Log.Debug("EXC 1");
+                Log.Debug(e);
             }
 
             // 掴む状態を更新
@@ -901,16 +942,17 @@ namespace CM3D2.VRMenuPlugin
                     currentGripTarget = nextGripTarget;
                     currentGripObject = nextGripObject;
 
-                    Log.Out("currentGripTarget=" + currentGripTarget);
+                    Log.Debug("currentGripTarget=" + currentGripTarget);
 
                     switch (currentGripTarget)
                     {
                         case GripTarget.Handler:
-                            Log.Out("Call OnGripStart");
+                            //Log.Out("Call OnGripStart");
                             (currentGripObject as IGripTriggerHandler).OnGripStart();
                             break;
                         case GripTarget.Object:
-                            //case GripTarget.Maid:
+                        case GripTarget.Maid:
+                        case GripTarget.SpawnItem:
                             grippingList.Add(currentGripObject as Transform);
                             break;
                         case GripTarget.World:
@@ -930,8 +972,8 @@ namespace CM3D2.VRMenuPlugin
             }
             catch (Exception e)
             {
-                Log.Out("EXC 2");
-                Log.Out(e);
+                Log.Debug("EXC 2");
+                Log.Debug(e);
             }
 
             if (isTriggerDown == false &&
@@ -952,7 +994,8 @@ namespace CM3D2.VRMenuPlugin
                     (currentGripObject as IGripTriggerHandler).OnGripReleased();
                     break;
                 case GripTarget.Object:
-                //case GripTarget.Maid:
+                case GripTarget.Maid:
+                case GripTarget.SpawnItem:
                     grippingList.Remove(currentGripObject as Transform);
                     break;
                 case GripTarget.World:
@@ -985,7 +1028,7 @@ namespace CM3D2.VRMenuPlugin
 
                 if(Device.GetPressDown(Button.Menu) && hitinfo.collider != null)
                 {
-                    Log.Out("HIT " + hitinfo.collider.gameObject.name + " [" + hitinfo.collider.gameObject.layer + "]");
+                    Log.Debug("HIT " + hitinfo.collider.gameObject.name + " [" + hitinfo.collider.gameObject.layer + "]");
                 }
 
                 return;

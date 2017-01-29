@@ -12,19 +12,25 @@ namespace CM3D2.VRMenuPlugin
 {
     public static class Log
     {
-        public static void Out(string str)
+        public static void Print(string str)
         {
             Console.WriteLine("[VRM] " + str);
         }
 
-        public static void Out(Exception e)
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Debug(string str)
         {
-            Out(e.Message);
-            Out(e.StackTrace);
+            Console.WriteLine("[VRM] " + str);
+        }
+
+        public static void Debug(Exception e)
+        {
+            Debug(e.Message);
+            Debug(e.StackTrace);
             if (e.InnerException != null)
             {
-                Out("Inner exception:");
-                Out(e.InnerException);
+                Debug("Inner exception:");
+                Debug(e.InnerException);
             }
         }
     }
@@ -91,7 +97,6 @@ namespace CM3D2.VRMenuPlugin
 
     public static class Util
     {
-
         public static Transform SearchInChildren(Transform parent, string name, int depth, int maxdepth)
         {
             foreach (Transform t in parent)
@@ -125,13 +130,14 @@ namespace CM3D2.VRMenuPlugin
         }
 
         // ゲーム内で掴める対象
-        public static Transform GetGripTarget(GameObject obj)
+        public static Transform GetGripTarget(GameObject obj, out GripTarget target)
         {
+            target = GripTarget.Maid;
             if (obj == null || obj.transform == null)
             {
                 return null;
             }
-            Transform transform = GetTargetTransform(obj);
+            Transform transform = GetTargetTransform(obj, ref target);
             if (transform == null)
             {
                 if (obj.layer == 17)
@@ -143,15 +149,24 @@ namespace CM3D2.VRMenuPlugin
             return transform;
         }
 
-        private static Transform GetTargetTransform(GameObject obj)
+        private static Transform GetTargetTransform(GameObject obj, ref GripTarget target)
         {
             Transform transform = obj.transform;
             while (transform != null && transform.parent != null)
             {
-                if (transform.parent.gameObject.name == "PhotoPrefab" ||
-                    transform.parent.gameObject.name == "AllOffset")
+                if (transform.parent.gameObject.name == "PhotoPrefab")
                 {
-                    //Log.Out(transform.parent.gameObject.name);
+                    target = GripTarget.Object;
+                    return transform;
+                }
+                else if (transform.parent.gameObject.name == "AllOffset")
+                {
+                    target = GripTarget.Maid;
+                    return transform;
+                }
+                else if (transform.parent.gameObject.name == "VRMenu_SpawnItemRoot")
+                {
+                    target = GripTarget.SpawnItem;
                     return transform;
                 }
                 transform = transform.parent;
@@ -184,7 +199,7 @@ namespace CM3D2.VRMenuPlugin
                     {
                         tsb.Length = 0;
                         GetWindowText(hwnd, tsb, tsb.Capacity);
-                        if (tsb.ToString() == "CUSTOM MAID 3D 2")
+                        if (tsb.ToString().StartsWith("CUSTOM MAID 3D 2"))
                         {
                             windowHandle_ = hwnd;
                             break;
@@ -192,7 +207,7 @@ namespace CM3D2.VRMenuPlugin
                     }
                     if (windowHandle_ == IntPtr.Zero)
                     {
-                        Log.Out("メインウィンドウが見つかりませんでした！！");
+                        Log.Debug("メインウィンドウが見つかりませんでした！！");
                     }
                 }
                 return windowHandle_;
@@ -297,24 +312,26 @@ namespace CM3D2.VRMenuPlugin
         public Shader UIDefaultShader;
         public Shader UIFontShader;
 
+        // アイテム呼び出し
+        public Shader HandleBox;
+
         public Asset()
         {
-            string assetpath = Path.GetDirectoryName(typeof(GUIQuad).Assembly.Location) + "\\cm3d2.vrmenu.plugin";
-            Log.Out("loading asset bundle ...");
-            var assetBundle = AssetBundle.LoadFromFile(assetpath);
+            var assetBundle = AssetBundle.LoadFromMemory(CM3D2.VRMenu.Plugin.Properties.Resources.AssetBundleVRMenu);
             if (assetBundle == null)
             {
-                Log.Out("シェーダのロードに失敗しました。cm3d2.vrmneu.pluginおよびそのmanifestファイルをプラグインDLLと同じフォルダにおいていることを確認してください。または、ゲーム本体のアップデートが必要かもしれません");
+                Log.Debug("AssetBundleが読み込めません");
             }
             else
             {
-                Log.Out("loading shader ...");
+                Log.Debug("loading shader ...");
                 UIBlendShader = (Shader)assetBundle.LoadAsset("Assets/UIBlend.shader", typeof(Shader));
                 PointerShader = (Shader)assetBundle.LoadAsset("Assets/Pointer.shader", typeof(Shader));
                 ColorShader = (Shader)assetBundle.LoadAsset("Assets/Color.shader", typeof(Shader));
                 LabelShader = (Shader)assetBundle.LoadAsset("Assets/Label.shader", typeof(Shader));
                 UIDefaultShader = (Shader)assetBundle.LoadAsset("Assets/UI-Default.shader", typeof(Shader));
                 UIFontShader = (Shader)assetBundle.LoadAsset("Assets/UI-DefaultFont.shader", typeof(Shader));
+                HandleBox = (Shader)assetBundle.LoadAsset("Assets/HandleBox.shader", typeof(Shader));
                 // もう必要ないのでアンロードしておく
                 assetBundle.Unload(false);
             }
@@ -404,7 +421,7 @@ namespace CM3D2.VRMenuPlugin
 
         private static IEnumerator installMenuCo(int controllerIndex, VRMenu menu, SystemMenuCategory category)
         {
-            Log.Out("Start to install menu " + controllerIndex);
+            Log.Debug("Start to install menu " + controllerIndex);
             while (VRMenuPlugin.Instance == null)
             {
                 yield return new WaitForSeconds(0.5f);
@@ -414,7 +431,7 @@ namespace CM3D2.VRMenuPlugin
                 yield return new WaitForSeconds(0.5f);
             }
             VRMenuPlugin.Instance.Controllers[controllerIndex].Mode.AddButton(menu, category);
-            Log.Out("Menu install finished " + controllerIndex);
+            Log.Debug("Menu install finished " + controllerIndex);
             yield break;
         }
 

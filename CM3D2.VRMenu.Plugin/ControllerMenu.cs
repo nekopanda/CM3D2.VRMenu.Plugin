@@ -254,7 +254,7 @@ namespace CM3D2.VRMenuPlugin
             if (menu == null)
             {
                 var e = new ArgumentNullException("メニューをnullにすることはできません");
-                Log.Out(e);
+                Log.Debug(e);
                 throw e;
             }
 

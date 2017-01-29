@@ -31,6 +31,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\CMLibrary\Assembly-CSharp.dll</HintPath>
+    </Reference>
     <Reference Include="CM3D2.GripMovePlugin.Plugin">
       <HintPath>..\CMLibrary\CM3D2.GripMovePlugin.Plugin.dll</HintPath>
     </Reference>

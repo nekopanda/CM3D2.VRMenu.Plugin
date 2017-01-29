@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 3126263239
+CRC: 1781328020
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 2509467f0fd1cc0cccb16611d1702950
+    Hash: 73f08bd5d20bd825ab540ce3f7fb15f8
   TypeTreeHash:
     serializedVersion: 2
     Hash: 1094ce4a8b63a0cc7870d736bb694a93
@@ -16,6 +16,7 @@ Assets:
 - Assets/UI-DefaultFont.shader
 - Assets/UI-Default.shader
 - Assets/UIBlend.shader
+- Assets/HandleBox.shader
 - Assets/Pointer.shader
 - Assets/Color.shader
 Dependencies: []

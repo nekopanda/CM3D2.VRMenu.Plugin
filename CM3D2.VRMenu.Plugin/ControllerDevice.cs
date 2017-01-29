@@ -29,6 +29,12 @@ namespace CM3D2.VRMenuPlugin
     {
         public SteamVR_TrackedObject TrackedObject { get; private set; }
 
+        public bool IsValid {
+            get {
+                return TrackedObject.isValid;
+            }
+        }
+
         public SteamVR_Controller.Device Device
         {
             get
@@ -37,7 +43,7 @@ namespace CM3D2.VRMenuPlugin
             }
         }
 
-        public override object RawDevice { get { return Device; } }
+        public override object RawDevice { get { return TrackedObject; } }
 
         public ViveControllerDevice(SteamVR_TrackedObject trackedObject)
         {
@@ -54,6 +60,10 @@ namespace CM3D2.VRMenuPlugin
 
         public override bool GetPressDown(Button button)
         {
+            if(IsValid == false)
+            {
+                return false;
+            }
             var device = Device;
             if (button == Button.Trigger)
             {
@@ -73,6 +83,10 @@ namespace CM3D2.VRMenuPlugin
 
         public override bool GetPress(Button button)
         {
+            if (IsValid == false)
+            {
+                return false;
+            }
             var device = Device;
             if (button == Button.Trigger)
             {
@@ -92,6 +106,10 @@ namespace CM3D2.VRMenuPlugin
 
         public override bool GetPressUp(Button button)
         {
+            if (IsValid == false)
+            {
+                return false;
+            }
             var device = Device;
             if (button == Button.Trigger)
             {

@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 
 namespace CM3D2.VRMenuPlugin
 {
@@ -20,7 +21,12 @@ namespace CM3D2.VRMenuPlugin
         Max
     }
 
-    [PluginName("VRMenuPlugin"), PluginVersion("0.0.0.1")]
+    [
+        PluginFilter("CM3D2VRx64"),
+        PluginFilter("CM3D2OHVRx64"), // 未テストのため
+        PluginName("VRMenuPlugin"),
+        PluginVersion("0.0.0.1")
+    ]
     public class VRMenuPlugin : ExPluginBase
     {
         private static VRMenuPlugin instance_;
@@ -32,6 +38,7 @@ namespace CM3D2.VRMenuPlugin
         public class ControllerConfig
         {
             public bool EnableGripGUI = true;
+            public bool EnableGripMaid = true;
             public bool EnableGripObject = true;
             public bool EnableGripWorld = true;
         }
@@ -42,6 +49,9 @@ namespace CM3D2.VRMenuPlugin
             public float PointerSize = 0.02f;
             public float PointerDistance = 0.1f;
             public bool PointerAlwaysVisible = false;
+            // シーン開始時の頭の高さオフセット
+            public float HeadOffset = 0;
+            public bool EnableLightPhysics = true;
         }
 
         private PluginConfig config_;
@@ -77,6 +87,22 @@ namespace CM3D2.VRMenuPlugin
 
         public bool IsNeedWriteConfig;
 
+        public SpawnItemUI SpawnItemUI { get; private set; }
+
+        public ItemManager SpawnItemManager {
+            get {
+                if(SpawnItemUI == null)
+                {
+                    return null;
+                }
+                return SpawnItemUI.ItemManager;
+            }
+        }
+
+        // UnityInjectorにAddComponentしていくのはお行儀が悪いので
+        // プラグイン専用のゲームオブジェクトを作る
+        private GameObject pluginRootObj;
+
         private VRMenuController[] controllers_ = new VRMenuController[(int)Controller.Max];
         public VRMenuController[] Controllers { get { return controllers_; } }
 
@@ -102,6 +128,24 @@ namespace CM3D2.VRMenuPlugin
                 menuctrl.Menu.SetUserMenuVisiblity(menu, visiblity);
             }
         }
+
+        //
+        // Vive VRカメラと位置について
+        // 
+        // CameraRigはVive VRカメラのこと
+        // これはユーザのプレイルームの原点（真ん中の床）を表している
+        // CM3D2ではViveCamOffsetというオブジェクトをゲームメインにぶら下げて
+        // 空間の移動（＝CameraRigの移動）は、まずViveCamOffsetを目的の位置に動かして
+        // ViveCamera.Update()でCameraRigの位置をViveCamOffsetの位置に合わせている
+        // このとき実際にはViveCamOffsetにぶら下げたBaseオブジェクトのTransformをCameraRigにコピーしてる
+        // CameraRigの位置は実際には床の位置なので、ユーザの頭はそれよりも高いところにある
+        // BaseオブジェクトはCameraRigの位置とユーザの頭の位置(EyeAnchor)の違いを
+        // 吸収するためにあると思われるが、VR ver1.29現在、
+        // 実装が未完成で有効に使われていない状態となっている
+        //
+        // 本プラグインではシーン開始時にBaseオブジェクトを
+        // 現在の頭の位置から逆算した位置に合わせるようにした
+        // 
 
         // 自分の頭
         public Transform Head {
@@ -131,35 +175,73 @@ namespace CM3D2.VRMenuPlugin
             }
         }
 
+        private Type lightPhysics;
+
         // Use this for initialization
         void Start()
         {
-            try
+            DontDestroyOnLoad(gameObject);
+
+            pluginRootObj = new GameObject("VRMenuPlugin");
+            pluginRootObj.transform.parent = transform;
+
+            instance_ = this;
+
+            // SpawnItemUI初期化
+            var itemUI = pluginRootObj.AddComponent<SpawnItemUI>();
+            itemUI.Initialize();
+            SpawnItemUI = itemUI;
+            
+            // LightPhysics
+            lightPhysics = Type.GetType("CM3D2.LightPhysics.Managed.LightPhysics, CM3D2.LightPhysics.Managed");
+
+            // 設定メニューに追加
+            createSettingMenu();
+
+            // 設定を反映
+            setLightyPhysics();
+
+            initialized_ = true;
+
+            StartCoroutine(findOvrScreenCo());
+            StartCoroutine(writeConfigCo());
+
+            Log.Debug("Coroutine intalled ...");
+        }
+
+        private void setLightyPhysics()
+        {
+            if(lightPhysics != null)
             {
-                Log.Out("Start");
-                Log.Out(this.GetType().AssemblyQualifiedName);
-                DontDestroyOnLoad(gameObject);
-
-                instance_ = this;
-
-                // 設定メニューに追加
-                createSettingMenu();
-
-                initialized_ = true;
-
-                StartCoroutine(findOvrScreen());
-                StartCoroutine(writeConfigCo());
-
-                Log.Out("Coroutine intalled ...");
+                lightPhysics.GetProperty("Enable").SetValue(null, Config.EnableLightPhysics, null);
             }
-            catch(Exception e)
+        }
+
+        private Transform m_trOffseBase;
+        private void OnLevelWasLoaded(int level)
+        {
+            // シーン開始時にオフセットベースを頭の位置に合わせて調整
+            if(PlayRoom != null)
             {
-                Log.Out(e);
+                if(m_trOffseBase == null)
+                {
+                    var camera = GameMain.Instance.OvrMgr.OvrCamera;
+                    var field = camera.GetType().GetField("m_trOffseBase", BindingFlags.Instance | BindingFlags.NonPublic);
+                    m_trOffseBase = (Transform)field.GetValue(camera);
+                }
+
+                if(m_trOffseBase != null)
+                {
+                    var headToPlayRoom = PlayRoom.transform.position - Head.position;
+                    headToPlayRoom.y += Config.HeadOffset;
+                    var pos = m_trOffseBase.localPosition;
+                    m_trOffseBase.localPosition = new Vector3(0, headToPlayRoom.y, 0);
+                }
             }
         }
 
         // 誰よりも早くovr_screenを見つけて非アクティブ化
-        private IEnumerator findOvrScreen()
+        private IEnumerator findOvrScreenCo()
         {
             while(true)
             {
@@ -183,46 +265,46 @@ namespace CM3D2.VRMenuPlugin
                 var ovr_screen = GameObject.Find("ovr_screen");
                 if (ovr_screen == null)
                 {
-                    Log.Out("ovr_screen == NULL ?????");
+                    Log.Debug("ovr_screen == NULL ?????");
                     continue;
                 }
                 var meshre = ovr_screen.GetComponentInChildren<MeshRenderer>();
                 if(meshre == null)
                 {
-                    Log.Out("MeshRenderer == NULL");
+                    Log.Debug("MeshRenderer == NULL");
                     continue;
                 }
                 if(meshre.material == null)
                 {
-                    Log.Out("meshre.material == NULL");
+                    Log.Debug("meshre.material == NULL");
                     continue;
                 }
                 if(meshre.material.mainTexture == null)
                 {
-                    Log.Out("meshre.material.mainTexture == NULL");
+                    Log.Debug("meshre.material.mainTexture == NULL");
                     continue;
                 }
                 var rt = meshre.material.mainTexture as RenderTexture;
                 if (rt == null)
                 {
-                    Log.Out("rtOVRUI == NULL [" + meshre.material.mainTexture.ToString() + "]");
+                    Log.Debug("rtOVRUI == NULL [" + meshre.material.mainTexture.ToString() + "]");
                     continue;
                 }
-                Log.Out("FOUND !!!");
+                Log.Debug("FOUND !!!");
             }
         }
 
         private void createSettingMenu()
         {
-            var menuGUISize = Helper.InstantiateMenu(gameObject,
+            // 設定
+            var menuGUISize = Helper.InstantiateMenu(pluginRootObj,
                 new {
                     Control = "RepeatButtonsMenu",
                     Text = "GUIサイズ",
                     Caption = "現在のサイズ: " + Config.GUISize.ToString("F2"),
                     AngleOffset = 90,
                     TickMode = "Tick",
-                    OnTick = (Action<object, int, int>)((m, _, i) =>
-                    {
+                    OnTick = (Action<object, int, int>)((m, _, i) => {
                         float current = Config.GUISize;
                         float factor = (i == 0) ? 1.0f / 1.05f : 1.05f;
                         float next = Math.Max(Math.Min(current * factor, 6f), 0.01f);
@@ -240,7 +322,60 @@ namespace CM3D2.VRMenuPlugin
                     }
                 });
 
-            var menuPointerSize = Helper.InstantiateMenu(gameObject,
+            var headOffsetDistance = Helper.InstantiateMenu(pluginRootObj,
+                new {
+                    Control = "RepeatButtonsMenu",
+                    Text = "頭の高さ調整",
+                    Caption = "現在のオフセット: " + (int)Math.Round(Config.HeadOffset * 100) + "cm",
+                    AngleOffset = 90,
+                    TickMode = "Tick",
+                    OnTick = (Action<object, int, int>)((m, _, i) => {
+                        float current = Config.HeadOffset;
+                        float diff = 0.02f * ((i == 0) ? -1 : 1);
+                        float next = Math.Max(Math.Min(current + diff, 2.0f), -2.0f);
+                        Config.HeadOffset = next;
+                        IsNeedWriteConfig = true;
+                        ((RepeatButtonsMenu)m).Caption = "現在のオフセット: " + (int)Math.Round(Config.HeadOffset * 100) + "cm";
+                    }),
+                    Items = new object[] {
+                        "低くする",
+                        "高くする"
+                    }
+                });
+
+            var settingList = new List<object>();
+
+            settingList.Add(menuGUISize);
+            settingList.Add(headOffsetDistance);
+
+            if (lightPhysics != null)
+            {
+                var lightPhysicsEnable =
+                    new {
+                        Control = "ToggleButton",
+                        TextOn = "LightPhysics:有効",
+                        TextOff = "LightPhysics:無効",
+                        Getter = (Func<object, bool>)(_ => Config.PointerAlwaysVisible),
+                        Setter = (Action<object, bool>)((_, v) => {
+                            Config.EnableLightPhysics = v;
+                            IsNeedWriteConfig = true;
+                            setLightyPhysics();
+                        })
+                    };
+
+                settingList.Add(lightPhysicsEnable);
+            }
+
+            var settingMenu = Helper.InstantiateMenu(pluginRootObj, new {
+                Name = "VRMenu設定",
+                Control = "VRMenu",
+                Items = settingList.ToArray()
+            });
+
+            Helper.InstallMenuButton(this, settingMenu);
+
+            // ポインタ設定
+            var menuPointerSize = Helper.InstantiateMenu(pluginRootObj,
                 new {
                     Control = "RepeatButtonsMenu",
                     Text = "ポインタサイズ",
@@ -269,7 +404,7 @@ namespace CM3D2.VRMenuPlugin
                     }
                 });
 
-            var menuPointerDistance = Helper.InstantiateMenu(gameObject,
+            var menuPointerDistance = Helper.InstantiateMenu(pluginRootObj,
                 new {
                     Control = "RepeatButtonsMenu",
                     Text = "ポインタ距離",
@@ -301,11 +436,12 @@ namespace CM3D2.VRMenuPlugin
             var menuPointerVisible =
                 new {
                     Control = "ToggleButton",
-                    TextOn = "ポインタを常に表示",
-                    TextOff = "ポインタを普通に表示",
+                    TextOn = "ポインタを常に表示:ON",
+                    TextOff = "ポインタを常に表示:OFF",
                     Getter = (Func<object, bool>)(_ => Config.PointerAlwaysVisible),
                     Setter = (Action<object, bool>)((_, v) => {
                         Config.PointerAlwaysVisible = v;
+                        IsNeedWriteConfig = true;
                         foreach (var c in Controllers)
                         {
                             if (c != null)
@@ -316,23 +452,23 @@ namespace CM3D2.VRMenuPlugin
                     })
                 };
 
-            var menuGripLeft = Helper.InstantiateMenu(gameObject, createGripMenu(ConfigLeft));
-            var menuGripRight = Helper.InstantiateMenu(gameObject, createGripMenu(ConfigRight));
+            var menuGripLeft = Helper.InstantiateMenu(pluginRootObj, createGripMenu(ConfigLeft));
+            var menuGripRight = Helper.InstantiateMenu(pluginRootObj, createGripMenu(ConfigRight));
 
-            var menuLeft = Helper.InstantiateMenu(gameObject,
-                createSettingMenu(new object[] {
-                    menuGUISize, menuPointerSize, menuPointerDistance, menuPointerVisible, menuGripLeft }));
-            var menuRight = Helper.InstantiateMenu(gameObject,
-                createSettingMenu(new object[] {
-                    menuGUISize, menuPointerSize, menuPointerDistance, menuPointerVisible, menuGripRight }));
+            var menuLeft = Helper.InstantiateMenu(pluginRootObj,
+                createPointerMenu(new object[] {
+                    menuPointerVisible, menuPointerSize, menuPointerDistance, menuGripLeft }));
+            var menuRight = Helper.InstantiateMenu(pluginRootObj,
+                createPointerMenu(new object[] {
+                    menuPointerVisible, menuPointerSize, menuPointerDistance, menuGripRight }));
 
             Helper.InstallMenuButton(this, menuLeft, menuRight);
         }
 
-        private object createSettingMenu(object[] items)
+        private object createPointerMenu(object[] items)
         {
             return new {
-                Name = "VRMenu設定",
+                Name = "ポインタ設定",
                 Control = "VRMenu",
                 Items = items
             };
@@ -353,6 +489,13 @@ namespace CM3D2.VRMenuPlugin
                     },
                     new {
                         Control = "ToggleButton",
+                        TextOn = "メイド-有効",
+                        TextOff = "メイド-無効",
+                        Getter = (Func<object, bool>)(_ => config.EnableGripMaid),
+                        Setter = (Action<object, bool>)((_, v) => config.EnableGripMaid = v)
+                    },
+                    new {
+                        Control = "ToggleButton",
                         TextOn = "オブジェクト-有効",
                         TextOff = "オブジェクト-無効",
                         Getter = (Func<object, bool>)(_ => config.EnableGripObject),
@@ -369,121 +512,7 @@ namespace CM3D2.VRMenuPlugin
             };
         }
 
-        private void createSettingMenuOld()
-        {
-            RepeatButtonsMenu menuGUISize;
-            RepeatButtonsMenu menuPointerSize;
-            RepeatButtonsMenu menuPointerDistance;
-            VRMenu menuGrip;
-
-            VRMenu settingMenu = gameObject.AddComponent<VRMenu>();
-
-            {
-                menuGUISize = settingMenu.AddSubMenu<RepeatButtonsMenu>("GUIサイズ");
-                menuGUISize.AngleOffset = 90;
-                menuGUISize.TickMode = RepeatButtonTickMode.Tick;
-                Action updateGUISizeCaption = () => {
-                    menuGUISize.Caption = "現在のサイズ: " + Config.GUISize.ToString("F2");
-                };
-                menuGUISize.OnTick += (m, _, i) => {
-                    float current = Config.GUISize;
-                    float factor = (i == 0) ? 1.0f / 1.05f : 1.05f;
-                    float next = Math.Max(Math.Min(current * factor, 6f), 0.01f);
-                    Config.GUISize = next;
-                    IsNeedWriteConfig = true;
-                    if (GUIQuad.Instance != null)
-                    {
-                        GUIQuad.Instance.UpdateGuiQuadScale();
-                    }
-                    updateGUISizeCaption();
-                };
-                menuGUISize.AddButton<SimpleButton>("小さくする");
-                menuGUISize.AddButton<SimpleButton>("大きくする");
-                updateGUISizeCaption();
-            }
-
-            {
-                menuPointerSize = settingMenu.AddSubMenu<RepeatButtonsMenu>("ポインタサイズ");
-                menuPointerSize.AngleOffset = 90;
-                menuPointerSize.TickMode = RepeatButtonTickMode.Tick;
-                Action updatePointerSizeCaption = () => {
-                    float sizeInCm = Config.PointerSize * 100;
-                    menuPointerSize.Caption = "現在のサイズ: " + sizeInCm.ToString("F2");
-                };
-                menuPointerSize.OnTick += (m, _, i) => {
-                    float current = Config.PointerSize;
-                    float factor = (i == 0) ? 1.0f / 1.05f : 1.05f;
-                    float next = Math.Max(Math.Min(current * factor, 0.2f), 0.001f);
-                    Config.PointerSize = next;
-                    IsNeedWriteConfig = true;
-
-                    foreach (var c in Controllers)
-                    {
-                        if (c != null)
-                        {
-                            c.UpdatePointerSize();
-                        }
-                    }
-                    updatePointerSizeCaption();
-                };
-                menuPointerSize.AddButton<SimpleButton>("小さくする");
-                menuPointerSize.AddButton<SimpleButton>("大きくする");
-                updatePointerSizeCaption();
-            }
-
-            {
-                menuPointerDistance = settingMenu.AddSubMenu<RepeatButtonsMenu>("ポインタ距離");
-                menuPointerDistance.AngleOffset = 90;
-                menuPointerDistance.TickMode = RepeatButtonTickMode.Tick;
-                Action updatePointerDistanceCaption = () => {
-                    float sizeInCm = Config.PointerDistance * 100;
-                    menuPointerDistance.Caption = "現在の距離: " + sizeInCm.ToString("F1");
-                };
-                menuPointerDistance.OnTick += (m, _, i) => {
-                    float current = Config.PointerDistance;
-                    float diff = Math.Max(Math.Abs(current) * 0.05f, 0.001f) * ((i == 0) ? -1 : 1);
-                    float next = Math.Max(Math.Min(current + diff, 5), -5);
-                    Config.PointerDistance = next;
-                    IsNeedWriteConfig = true;
-
-                    foreach (var c in Controllers)
-                    {
-                        if (c != null)
-                        {
-                            c.UpdatePointerDistance();
-                        }
-                    }
-                    updatePointerDistanceCaption();
-                };
-                menuPointerDistance.AddButton<SimpleButton>("小さくする");
-                menuPointerDistance.AddButton<SimpleButton>("大きくする");
-                updatePointerDistanceCaption();
-            }
-
-            {
-                menuGrip = settingMenu.AddSubMenu<VRMenu>("掴み設定");
-                menuGrip.Caption = "掴み設定";
-                menuGrip.Add(new ToggleButton() {
-                    TextOn = "GUI-有効",
-                    TextOff = "GUI-無効",
-                    Getter = _ => ConfigLeft.EnableGripGUI,
-                    Setter = (_, v) => ConfigLeft.EnableGripGUI = v
-                });
-                menuGrip.Add(new ToggleButton() {
-                    TextOn = "オブジェクト-有効",
-                    TextOff = "オブジェクト-無効",
-                    Getter = _ => ConfigLeft.EnableGripObject,
-                    Setter = (_, v) => ConfigLeft.EnableGripObject = v
-                });
-                menuGrip.Add(new ToggleButton() {
-                    TextOn = "ワールド-有効",
-                    TextOff = "ワールド-無効",
-                    Getter = _ => ConfigLeft.EnableGripWorld,
-                    Setter = (_, v) => ConfigLeft.EnableGripWorld = v
-                });
-            }
-        }
-
+        // 設定が変更されていたらファイルに書き込み
         private IEnumerator writeConfigCo()
         {
             while(true)
@@ -499,6 +528,7 @@ namespace CM3D2.VRMenuPlugin
             }
         }
 
+        // コントローラをインストール
         private IEnumerator tryInstallCo()
         {
             cameraOffset = null;
@@ -519,7 +549,7 @@ namespace CM3D2.VRMenuPlugin
                     {
                         break;
                     }
-                    Log.Out("not completed ...");
+                    Log.Debug("not completed ...");
                 }
                 yield return new WaitForSeconds(0.5f);
             }
@@ -533,7 +563,7 @@ namespace CM3D2.VRMenuPlugin
             if(transform != null)
             {
                 cameraOffset = transform.gameObject;
-                Log.Out("ViveCamOffset found");
+                Log.Debug("ViveCamOffset found");
             }
         }
 

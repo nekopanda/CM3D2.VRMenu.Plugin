@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using UnityEngine;
 
@@ -24,17 +25,17 @@ namespace CM3D2.VRMenuPlugin
 
         public virtual void OnActivated(Controller controller)
         {
-            Console.WriteLine("Mode Activated");
+            Log.Debug("Mode Activated");
         }
 
         public virtual void OnDeactivated(Controller controller)
         {
-            Console.WriteLine("Mode Deactivated");
+            Log.Debug("Mode Deactivated");
         }
 
         public virtual void OnTouchPadState(Controller controller, bool enable)
         {
-            //Console.WriteLine("Mode Deactivated");
+            //Log.Debug("Mode Deactivated");
         }
     }
     /*
@@ -57,7 +58,7 @@ namespace CM3D2.VRMenuPlugin
         }
     }
     */
-    class GrabMode : BuiltinModeBase
+    class PointerMode : BuiltinModeBase
     {
         public override string ModeName { get { return "POINTER"; } }
         public override void OnActivated(Controller controller)
@@ -87,12 +88,16 @@ namespace CM3D2.VRMenuPlugin
 
     class ItemMode : BuiltinModeBase, IControllerModel
     {
+        public static readonly string[] ItemName = new string[]
+        {
+            "コントローラに戻す", "ペンライト", "おもちゃ１", "おもちゃ２"
+        };
         private ContollerHacker.Item item;
         public ItemMode(ContollerHacker.Item item)
         {
             this.item = item;
         }
-        public override string ModeName { get { return item.ToString(); } }
+        public override string ModeName { get { return ItemName[(int)item]; } }
 
         public override void OnActivated(Controller controller)
         {
@@ -174,8 +179,7 @@ namespace CM3D2.VRMenuPlugin
         
         public bool IsEnabled {
             get {
-                return (GameMain.Instance.GetNowSceneName() == "SceneYotogi" ||
-                    GameMain.Instance.GetNowSceneName() == "SceneYotogiWithChubLip");
+                return (GameMain.Instance.GetNowSceneName() == "SceneYotogi");
             }
         }
 
@@ -206,7 +210,7 @@ namespace CM3D2.VRMenuPlugin
 
         public void OnActivated(Controller controller)
         {
-            Log.Out("Yotogi Command Tool Activated");
+            Log.Debug("Yotogi Command Tool Activated");
             ++activatedCount;
             VRMenuPlugin.Instance.ShowMenu(this, controller);
         }
@@ -471,6 +475,47 @@ namespace CM3D2.VRMenuPlugin
         }
     }
 
+    class ItemPickMode : MonoBehaviour, IVRControllerMode
+    {
+        public bool IsDiableGripByTrigger { get { return false; } }
+        public bool IsDiableGripByGrip { get { return false; } }
+        public bool IsEnabled { get { return VRMenuPlugin.Instance.SpawnItemUI.IsEnabledScene; } }
+        public string ModeName { get { return "ITEM-PICK"; } }
+
+        private bool[] controllerActive = new bool[(int)Controller.Max];
+
+        private void Update()
+        {
+            bool isPressUp = false;
+            for(int i = 0; i < controllerActive.Length; ++i)
+            {
+                if(controllerActive[i] == false)
+                {
+                    continue;
+                }
+                var dev = VRMenuPlugin.Instance.Controllers[i].Device;
+                isPressUp |= (dev.GetPressUp(Button.Left) || dev.GetPressUp(Button.Right));
+            }
+            if(isPressUp)
+            {
+                VRMenuPlugin.Instance.SpawnItemUI.ToggleShowHandle();
+            }
+        }
+
+        public void OnActivated(Controller controller)
+        {
+            VRMenuPlugin.Instance.SpawnItemUI.ShowGUI(true);
+        }
+        public void OnDeactivated(Controller controller)
+        {
+            VRMenuPlugin.Instance.SpawnItemUI.ShowGUI(false);
+        }
+        public void OnTouchPadState(Controller controller, bool enable)
+        {
+            controllerActive[(int)controller] = enable;
+        }
+    }
+
     class SampleMode : VRMenu, IVRControllerMode
     {
         public bool IsDiableGripByTrigger { get { return false; } }
@@ -549,7 +594,7 @@ namespace CM3D2.VRMenuPlugin
     {
         public static void InitBuiltinMode(ControllerMode modeSystem, GameObject parent)
         {
-            var grabMode = new GrabMode();
+            var grabMode = new PointerMode();
             modeSystem.AddMode(grabMode, SystemMenuCategory.MODE, 0);
 
             modeSystem.SetDefaultMode(grabMode);
@@ -567,6 +612,7 @@ namespace CM3D2.VRMenuPlugin
             }
 
             modeSystem.AddMode(parent.AddComponent<YotogiCommandTool>(), SystemMenuCategory.MODE, 20);
+            modeSystem.AddMode(parent.AddComponent<ItemPickMode>(), SystemMenuCategory.MODE, 25);
 
             //modeSystem.AddMode(parent.AddComponent<SampleMode>(), SystemMenuCategory.TOOL, 100);
         }

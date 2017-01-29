@@ -57,7 +57,7 @@ namespace CM3D2.VRMenuPlugin
         {
             if (instance_ == null)
             {
-                Log.Out("GUIQuad Create !!!");
+                Log.Debug("GUIQuad Create !!!");
                 GameObject go = GameObject.CreatePrimitive(PrimitiveType.Quad);
                 go.name = "VRMenu GUIQuad";
                 go.GetComponent<MeshCollider>().enabled = false;
@@ -72,7 +72,7 @@ namespace CM3D2.VRMenuPlugin
 
         private void Start()
         {
-            Log.Out("GUIQuad Start ...");
+            Log.Debug("GUIQuad Start ...");
             screenWidth = Screen.width;
             screenHeight = Screen.height;
 
@@ -129,7 +129,7 @@ namespace CM3D2.VRMenuPlugin
             if (uiMaterial == null)
             {
                 // シェーダがないと何も出来ない
-                Log.Out("No shader ...");
+                Log.Debug("No shader ...");
                 return;
             }
             if (rtOVRUI == null)
@@ -138,7 +138,7 @@ namespace CM3D2.VRMenuPlugin
                 {
                     //ovr_screen = GameObject.Find("ovr_screen");
                     ovr_screen = VRMenuPlugin.Instance.OVRScreen;
-                    Log.Out("ovr_screen found !!!");
+                    Log.Debug("ovr_screen found !!!");
                 }
                 if(ovr_screen != null)
                 {

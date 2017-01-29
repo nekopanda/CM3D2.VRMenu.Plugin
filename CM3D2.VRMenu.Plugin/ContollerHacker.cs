@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -12,7 +13,7 @@ namespace CM3D2.VRMenuPlugin
     {
         public enum Item
         {
-            Controller, Sticklight, AnalVibe, VibePink
+            Controller, Sticklight, VibePink, AnalVibe
         }
 
         public enum Mode
@@ -86,6 +87,8 @@ namespace CM3D2.VRMenuPlugin
             }
         }
 
+        private bool firstChangeItem = true;
+
         public ContollerHacker(GameObject controllerObject)
         {
             trackedObject = controllerObject.GetComponent<SteamVR_TrackedObject>();
@@ -155,10 +158,25 @@ namespace CM3D2.VRMenuPlugin
                 if(modelIndex < handItem.ModelNum)
                 {
                     handItem.ChangeModel(modelIndex);
+                    currentTargetMode = ViveController.OvrControllerMode.ITEM;
+                    changeModeMethod.Invoke(viveController, new object[] { ViveController.OvrControllerMode.ITEM });
+
+                    if(firstChangeItem)
+                    {
+                        // 初回はOvrHandItemMgrのStart()でペンライトに戻されてしまうので、
+                        // １フレーム後に再度ChangeItemを呼び出す
+                        viveController.StartCoroutine(delayedChangeItem(modelIndex));
+                        firstChangeItem = false;
+                    }
                 }
-                currentTargetMode = ViveController.OvrControllerMode.ITEM;
-                changeModeMethod.Invoke(viveController, new object[] { ViveController.OvrControllerMode.ITEM });
             }
+        }
+
+        private IEnumerator delayedChangeItem(int modelIndex)
+        {
+            yield return null;
+            handItem.ChangeModel(modelIndex);
+            yield break;
         }
 
         // モードを変えるとテキストが変更される可能性がある
@@ -205,7 +223,7 @@ namespace CM3D2.VRMenuPlugin
                 if(viveController.enabled == false)
                 {
                     // なぜかdisableになることがある？？
-                    Log.Out("ViveController disabled !!!!! Force enable it!");
+                    Log.Debug("ViveController disabled !!!!! Force enable it!");
                     viveController.enabled = true;
                 }
             }
@@ -231,7 +249,7 @@ namespace CM3D2.VRMenuPlugin
 
         public void Push(IControllerModel model)
         {
-            Log.Out("Push Model: " + model.ToString());
+            //Log.Out("Push Model: " + model.ToString());
             if(modelStack.Count > 0)
             {
                 modelStack.Last().Hide(controller);
@@ -242,7 +260,7 @@ namespace CM3D2.VRMenuPlugin
 
         public bool Remove(IControllerModel model)
         {
-            Log.Out("Remove Model: " + model.ToString());
+            //Log.Out("Remove Model: " + model.ToString());
             int index = modelStack.IndexOf(model);
             if (index != -1)
             {
@@ -263,7 +281,7 @@ namespace CM3D2.VRMenuPlugin
                 {
                     model.Hide(controller);
                 }
-                Log.Out("Removed");
+                //Log.Out("Removed");
                 return true;
             }
             return false;

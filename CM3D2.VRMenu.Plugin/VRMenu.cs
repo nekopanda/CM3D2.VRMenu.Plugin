@@ -612,7 +612,7 @@ namespace CM3D2.VRMenuPlugin
             if(catState.touchPadState != enable)
             {
                 catState.touchPadState = enable;
-                Log.Out("TouchPatState changed: " + enable);
+                //Log.Out("TouchPatState changed: " + enable);
                 if (catState.current == null)
                 {
                     return;
@@ -653,12 +653,12 @@ namespace CM3D2.VRMenuPlugin
             {
                 if (catState.touchPadState)
                 {
-                    Log.Out("変更前モードのタッチパッドを無効化します");
+                    //Log.Out("変更前モードのタッチパッドを無効化します");
                     // タッチパッド状態が有効になっていたら無効にする
                     catState.touchPadState = false;
                     catState.current.OnTouchPadState(controller.ControllerId, false);
                 }
-                Log.Out("変更前モードを非アクティブ化");
+                //Log.Out("変更前モードを非アクティブ化");
                 catState.current.OnDeactivated(controller.ControllerId);
             }
             if(dontTouchPrevious == false)
@@ -674,12 +674,12 @@ namespace CM3D2.VRMenuPlugin
                     controller.Hacker.Text = newMode.ModeName;
                 }
                 newMode.OnActivated(controller.ControllerId);
-                Log.Out("モード変更: " + newMode.ModeName);
+                Log.Debug("モード変更: " + newMode.ModeName);
             }
             else
             {
                 controller.Hacker.Text = "??????";
-                Log.Out("モード変更: ??????");
+                Log.Debug("モード変更: ??????");
             }
         }
 

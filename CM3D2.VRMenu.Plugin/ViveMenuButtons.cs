@@ -94,7 +94,7 @@ namespace CM3D2.VRMenuPlugin
             }
             catch (Exception e)
             {
-                Log.Out(e);
+                Log.Debug(e);
             }
         }
 

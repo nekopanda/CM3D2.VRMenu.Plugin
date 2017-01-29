@@ -11,7 +11,7 @@ namespace CM3D2.VRMenu.MyKeyInput
 {
     [
         PluginFilter("CM3D2VRx64"),
-        PluginFilter("CM3D2OHVRx64"), 
+        PluginFilter("CM3D2OHVRx64"),
         PluginName("VRMenuMyKeyInput"),
         PluginVersion("0.0.0.1")
     ]
@@ -35,8 +35,8 @@ namespace CM3D2.VRMenu.MyKeyInput
             }
             installToolButton.Invoke(null, new object[] { this, createVibeYourMaidController() });
             installMenuButton.Invoke(null, new object[] { this, createEtcController() });
-            installMenuButton.Invoke(null, new object[] { this, createDesktopScreenMenu() });
-            Console.WriteLine("[VRMenuMyKeyInput] メニューをインストールしました");
+            installToolButton.Invoke(null, new object[] { this, createDesktopScreenMenu() });
+            // Console.WriteLine("[VRMenuMyKeyInput] メニューをインストールしました");
         }
 
         private int GetFKey(int num)
@@ -123,6 +123,16 @@ namespace CM3D2.VRMenu.MyKeyInput
                         Control = "SimpleButton",
                         Text = "YotogiUtil(F3)",
                         Clicked = (Action<object, object, int>)((_,__,___)=>KeyInput(GetFKey(3)))
+                    },
+                    new {
+                        Control = "SimpleButton",
+                        Text = "HalfDressing(F2)",
+                        Clicked = (Action<object, object, int>)((_,__,___)=>KeyInput(GetFKey(2)))
+                    },
+                    new {
+                        Control = "SimpleButton",
+                        Text = "複数メイド撮影(F7)",
+                        Clicked = (Action<object, object, int>)((_,__,___)=>KeyInput(GetFKey(7)))
                     },
                     new {
                         Control = "SimpleButton",

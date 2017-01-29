@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{EE718BCC-42A3-4DF2-A03F-56AD2BFA10B9}</ProjectGuid>
+    <ProjectGuid>{27B139F7-CB9B-4EAF-B685-2AEE31EE4288}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CM3D2.VRMenu.Plugin.Patcher</RootNamespace>
-    <AssemblyName>CM3D2.VRMenu.Plugin.Patcher</AssemblyName>
+    <RootNamespace>CM3D2.PrintException.Plugin</RootNamespace>
+    <AssemblyName>CM3D2.PrintException.Plugin</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
@@ -30,12 +30,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject />
-  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Mono.Cecil">
-      <HintPath>..\CMLibrary\Mono.Cecil.dll</HintPath>
+    <Reference Include="PluginExt">
+      <HintPath>..\..\CM3D2.VRMenu.Plugin.Dev\CMLibrary\PluginExt.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -43,14 +40,20 @@
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="UnityEngine">
+      <HintPath>..\..\CM3D2.VRMenu.Plugin.Dev\CMLibrary\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityInjector">
+      <HintPath>..\..\CM3D2.VRMenu.Plugin.Dev\CMLibrary\UnityInjector.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CM3D2.VRMenu.Plugin.Patcher.cs" />
+    <Compile Include="CM3D2.PrintException.Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy "$(TargetPath)" "C:\KISS\CM3D2\Sybaris\Loader"</PostBuildEvent>
+    <PostBuildEvent>copy "$(TargetPath)" "C:\KISS\CM3D2\Sybaris\Plugins\UnityInjector"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

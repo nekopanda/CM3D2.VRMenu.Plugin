@@ -11,7 +11,12 @@ using UnityInjector.Attributes;
 
 namespace CM3D2.VRMenuPlugin
 {
-    [PluginName("VRMenuWithGripMovePlugin"), PluginVersion("0.0.0.1")]
+    [
+        PluginFilter("CM3D2VRx64"),
+        PluginFilter("CM3D2OHVRx64"), // 未テストのため
+        PluginName("VRMenuWithGripMovePlugin"),
+        PluginVersion("0.0.0.1")
+    ]
     public class VRMenuWithGripMovePlugin : ExPluginBase
     {
         private void Start()
@@ -27,13 +32,13 @@ namespace CM3D2.VRMenuPlugin
             var GripMoveControllerBase = assembly.GetType("CM3D2.GripMovePlugin.Plugin.GripMoveControllerBase");
             if (GripMoveControllerBase == null)
             {
-                Log.Out("GripMoveControllerBase == null");
+                Log.Debug("GripMoveControllerBase == null");
                 yield break;
             }
             var MenuToolBase = assembly.GetType("CM3D2.GripMovePlugin.Plugin.MenuToolBase");
             if (MenuToolBase == null)
             {
-                Log.Out("MenuToolBase == null");
+                Log.Debug("MenuToolBase == null");
                 yield break;
             }
             while (true)
@@ -102,7 +107,7 @@ namespace CM3D2.VRMenuPlugin
                 {
                     if (other.gameObject.GetComponent<MoveableGUIObject>() != null)
                     {
-                        Log.Out("Enter " + other.gameObject.name);
+                        Log.Debug("Enter " + other.gameObject.name);
                         touchingObjects.Add(other.gameObject);
                     }
                 }
@@ -122,10 +127,8 @@ namespace CM3D2.VRMenuPlugin
 
             public void OnGripStart()
             {
-                Log.Out("Start OnGripStart");
                 if (isActive)
                 {
-                    Log.Out("Yes Start OnGripStart");
                     // 最もポインタに近いハンドルを掴む
                     float mindist = float.PositiveInfinity;
                     foreach(var obj in touchingObjects.Items)
@@ -135,7 +138,6 @@ namespace CM3D2.VRMenuPlugin
                             continue;
                         }
                         float dist = Vector3.Distance(obj.transform.position, controller.Pointer.transform.position);
-                        Log.Out("Distance: " + dist);
                         if (dist < mindist)
                         {
                             grippingObject = obj;
@@ -144,7 +146,6 @@ namespace CM3D2.VRMenuPlugin
                     }
                     if (grippingObject != null)
                     {
-                        Log.Out("Grip start !!!");
                         transform.position = grippingObject.transform.position;
                         transform.rotation = grippingObject.transform.rotation;
                         grippingObjects.Add(grippingObject);
@@ -174,12 +175,7 @@ namespace CM3D2.VRMenuPlugin
 
         private bool IsLevelForIKMode(int level)
         {
-            Log.Out("IsLevelForIKMode(" + level + ")");
-            if (Util.IsChubLip())
-            {
-                return (level == 24);
-            }
-            return (level == 27);
+            return (GameMain.Instance.GetNowSceneName() == "ScenePhotoMode");
         }
 
         public bool IsEnabled {
