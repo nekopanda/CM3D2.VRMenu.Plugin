@@ -12,7 +12,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 
-namespace CM3D2.VRMenuPlugin
+namespace CM3D2.VRMenu.Plugin
 {
     public enum Controller
     {
@@ -23,9 +23,9 @@ namespace CM3D2.VRMenuPlugin
 
     [
         PluginFilter("CM3D2VRx64"),
-        PluginFilter("CM3D2OHVRx64"), // 未テストのため
+        PluginFilter("CM3D2OHVRx64"),
         PluginName("VRMenuPlugin"),
-        PluginVersion("0.0.0.1")
+        PluginVersion("0.0.1.0")
     ]
     public class VRMenuPlugin : ExPluginBase
     {

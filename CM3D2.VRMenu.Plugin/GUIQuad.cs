@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
 
-namespace CM3D2.VRMenuPlugin
+namespace CM3D2.VRMenu.Plugin
 {
     public class GUIQuad : MonoBehaviour
     {

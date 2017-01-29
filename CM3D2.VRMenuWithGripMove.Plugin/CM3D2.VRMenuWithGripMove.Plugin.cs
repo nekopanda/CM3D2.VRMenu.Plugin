@@ -9,13 +9,13 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityInjector.Attributes;
 
-namespace CM3D2.VRMenuPlugin
+namespace CM3D2.VRMenu.Plugin
 {
     [
         PluginFilter("CM3D2VRx64"),
-        PluginFilter("CM3D2OHVRx64"), // 未テストのため
+        PluginFilter("CM3D2OHVRx64"),
         PluginName("VRMenuWithGripMovePlugin"),
-        PluginVersion("0.0.0.1")
+        PluginVersion("0.0.1.0")
     ]
     public class VRMenuWithGripMovePlugin : ExPluginBase
     {

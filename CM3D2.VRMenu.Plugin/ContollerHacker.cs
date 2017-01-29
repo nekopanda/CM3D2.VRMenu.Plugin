@@ -7,7 +7,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CM3D2.VRMenuPlugin
+namespace CM3D2.VRMenu.Plugin
 {
     public class ContollerHacker
     {

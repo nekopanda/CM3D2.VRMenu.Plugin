@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-namespace CM3D2.VRMenuPlugin
+namespace CM3D2.VRMenu.Plugin
 {
     /// <summary>
     /// アイテム呼び出しをするクラス

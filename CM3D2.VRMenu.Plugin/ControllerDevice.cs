@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CM3D2.VRMenuPlugin
+namespace CM3D2.VRMenu.Plugin
 {
     // コントローラデバイス
     // ここでは細かなアクセスは定義しないで、意味づけされた操作だけ定義

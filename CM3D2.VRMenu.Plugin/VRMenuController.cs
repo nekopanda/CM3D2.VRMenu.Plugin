@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
 
-namespace CM3D2.VRMenuPlugin
+namespace CM3D2.VRMenu.Plugin
 {
     // 掴むロジック追加用インターフェース
     public interface IGripTriggerHandler
@@ -622,8 +622,8 @@ namespace CM3D2.VRMenuPlugin
                 Log.Debug("GUI位置をリセット");
                 // コントローラの20cm前
                 guiQuad.transform.position = transform.TransformPoint(new Vector3(0, 0, 0.2f));
-                // 45度上を向かせる
-                guiQuad.transform.rotation = Quaternion.LookRotation(transform.forward) * Quaternion.Euler(45,0,0);
+                // 60度上を向かせる
+                guiQuad.transform.rotation = Quaternion.LookRotation(transform.forward) * Quaternion.Euler(60,0,0);
             }
         }
 

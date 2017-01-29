@@ -8,7 +8,7 @@ using UnityInjector.Attributes;
 
 namespace CM3D2.PrintException.Plugin
 {
-    [PluginName("PrintException"), PluginVersion("0.0.0.1")]
+    [PluginName("PrintException"), PluginVersion("0.0.1.0")]
     public class PrintException : PluginBase
     {
         void Start()

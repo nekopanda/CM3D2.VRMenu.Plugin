@@ -13,13 +13,13 @@ namespace CM3D2.VRMenu.MyKeyInput
         PluginFilter("CM3D2VRx64"),
         PluginFilter("CM3D2OHVRx64"),
         PluginName("VRMenuMyKeyInput"),
-        PluginVersion("0.0.0.1")
+        PluginVersion("0.0.1.0")
     ]
     public class VRMenuMyKeyInput : ExPluginBase
     {
         private void Start()
         {
-            var type = Type.GetType("CM3D2.VRMenuPlugin.Helper, CM3D2.VRMenu.Plugin");
+            var type = Type.GetType("CM3D2.VRMenu.Plugin.Helper, CM3D2.VRMenu.Plugin");
             if(type == null)
             {
                 Console.WriteLine("[VRMenuMyKeyInput] VRMenuプラグインが読み込めないため無効化されました");
