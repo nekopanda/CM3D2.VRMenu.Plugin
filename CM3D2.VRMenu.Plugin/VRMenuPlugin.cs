@@ -25,7 +25,7 @@ namespace CM3D2.VRMenu.Plugin
         PluginFilter("CM3D2VRx64"),
         PluginFilter("CM3D2OHVRx64"),
         PluginName("VRMenuPlugin"),
-        PluginVersion("0.0.1.0")
+        PluginVersion("0.0.1.1")
     ]
     public class VRMenuPlugin : ExPluginBase
     {
@@ -226,7 +226,7 @@ namespace CM3D2.VRMenu.Plugin
                 if(m_trOffseBase == null)
                 {
                     var camera = GameMain.Instance.OvrMgr.OvrCamera;
-                    var field = camera.GetType().GetField("m_trOffseBase", BindingFlags.Instance | BindingFlags.NonPublic);
+                    var field = camera.GetType().GetField("m_trBaseRoomBase", BindingFlags.Instance | BindingFlags.NonPublic);
                     m_trOffseBase = (Transform)field.GetValue(camera);
                 }
 
@@ -249,6 +249,7 @@ namespace CM3D2.VRMenu.Plugin
                 if(ovrScreen != null)
                 {
                     ovrScreen.SetActive(false);
+                    Log.Debug("ovr_screen found");
                     StartCoroutine(tryInstallCo());
                     break;
                 }
@@ -559,11 +560,11 @@ namespace CM3D2.VRMenu.Plugin
 
         private void tryGetCamOffset()
         {
-            Transform transform = Util.SearchInChildren(GameMain.Instance.transform, "ViveCamOffset", 0, 1);
+            Transform transform = Util.SearchInChildren(GameMain.Instance.transform, "ViveCamBaseHead", 0, 1);
             if(transform != null)
             {
                 cameraOffset = transform.gameObject;
-                Log.Debug("ViveCamOffset found");
+                Log.Debug("ViveCamBaseHead found");
             }
         }
 
