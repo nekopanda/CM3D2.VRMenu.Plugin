@@ -25,7 +25,7 @@ namespace CM3D2.VRMenu.Plugin
         PluginFilter("CM3D2VRx64"),
         PluginFilter("CM3D2OHVRx64"),
         PluginName("VRMenuPlugin"),
-        PluginVersion("0.0.1.1")
+        PluginVersion("0.0.2.0")
     ]
     public class VRMenuPlugin : ExPluginBase
     {
@@ -52,6 +52,8 @@ namespace CM3D2.VRMenu.Plugin
             // シーン開始時の頭の高さオフセット
             public float HeadOffset = 0;
             public bool EnableLightPhysics = true;
+            public bool EnableWorldYMove = false;
+            public bool EnableWorldXZRotation = false;
         }
 
         private PluginConfig config_;
@@ -326,7 +328,7 @@ namespace CM3D2.VRMenu.Plugin
             var headOffsetDistance = Helper.InstantiateMenu(pluginRootObj,
                 new {
                     Control = "RepeatButtonsMenu",
-                    Text = "頭の高さ調整",
+                    Text = "シーン切り替わりでの頭の高さ調整",
                     Caption = "現在のオフセット: " + (int)Math.Round(Config.HeadOffset * 100) + "cm",
                     AngleOffset = 90,
                     TickMode = "Tick",
@@ -434,6 +436,12 @@ namespace CM3D2.VRMenu.Plugin
                     }
                 });
 
+            var detailedSetting = new {
+                Name = "詳細",
+                Control = "VRMenu",
+                Items = new object[] { menuPointerSize, menuPointerDistance }
+            };
+
             var menuPointerVisible =
                 new {
                     Control = "ToggleButton",
@@ -453,15 +461,48 @@ namespace CM3D2.VRMenu.Plugin
                     })
                 };
 
+            var menuWorldY =
+                new {
+                    Control = "ToggleButton",
+                    TextOn = "トリガーでのワールドY移動:ON",
+                    TextOff = "トリガーでのワールドY移動:OFF",
+                    Getter = (Func<object, bool>)(_ => Config.EnableWorldYMove),
+                    Setter = (Action<object, bool>)((_, v) => {
+                        Config.EnableWorldYMove = v;
+                        IsNeedWriteConfig = true;
+                    })
+                };
+
+            var menuWorldXZ =
+                new {
+                    Control = "ToggleButton",
+                    TextOn = "グリップでのワールドXZ回転:ON",
+                    TextOff = "グリップでのワールドXZ回転:OFF",
+                    Getter = (Func<object, bool>)(_ => Config.EnableWorldXZRotation),
+                    Setter = (Action<object, bool>)((_, v) => {
+                        Config.EnableWorldXZRotation = v;
+                        IsNeedWriteConfig = true;
+                    })
+                };
+
+            var menuResetWorldXZ =
+                new {
+                    Control = "SimpleButton",
+                    Text = "ワールドXZ回転をリセット",
+                    Clicked = (Action<object, object, int>)((_, __, i) => {
+                        Controllers[i].ResetWorldXZ();
+                    })
+                };
+
             var menuGripLeft = Helper.InstantiateMenu(pluginRootObj, createGripMenu(ConfigLeft));
             var menuGripRight = Helper.InstantiateMenu(pluginRootObj, createGripMenu(ConfigRight));
 
             var menuLeft = Helper.InstantiateMenu(pluginRootObj,
                 createPointerMenu(new object[] {
-                    menuPointerVisible, menuPointerSize, menuPointerDistance, menuGripLeft }));
+                    menuPointerVisible, menuGripLeft, menuResetWorldXZ, menuWorldXZ, menuWorldY, detailedSetting }));
             var menuRight = Helper.InstantiateMenu(pluginRootObj,
                 createPointerMenu(new object[] {
-                    menuPointerVisible, menuPointerSize, menuPointerDistance, menuGripRight }));
+                    menuPointerVisible, menuGripRight, menuResetWorldXZ, menuWorldXZ, menuWorldY, detailedSetting }));
 
             Helper.InstallMenuButton(this, menuLeft, menuRight);
         }
@@ -469,7 +510,7 @@ namespace CM3D2.VRMenu.Plugin
         private object createPointerMenu(object[] items)
         {
             return new {
-                Name = "ポインタ設定",
+                Name = "コントローラ設定",
                 Control = "VRMenu",
                 Items = items
             };

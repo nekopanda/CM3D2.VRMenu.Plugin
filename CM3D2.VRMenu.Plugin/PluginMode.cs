@@ -74,6 +74,7 @@ namespace CM3D2.VRMenu.Plugin
         }
         public override void OnTouchPadState(Controller controller, bool enable)
         {
+            /*
             var cont = GetController(controller);
             if (enable)
             {
@@ -83,6 +84,7 @@ namespace CM3D2.VRMenu.Plugin
             {
                 cont.AlwaysClickableOnGUI = false;
             }
+            */
         }
     }
 
@@ -347,6 +349,51 @@ namespace CM3D2.VRMenu.Plugin
 
             private static readonly float G = 1;
 
+            private Vector3 calcDropPoint(Vector3 fwd, Vector3 startPos)
+            {
+                Vector3 scaledFwd = fwd * 4;
+                float fwdy = scaledFwd.y;
+                float y = startPos.y;
+
+                // yがマイナスだったらy方向を逆にする
+                if (y < 0)
+                {
+                    y = -y;
+                    fwdy = -fwdy;
+                }
+
+                // 落ちるまでの時間
+                float t = (float)(fwdy + Math.Sqrt(fwdy * fwdy + 2 * G * y)) / G;
+
+                // 落ちたポイント
+                Vector3 pos = startPos + t * scaledFwd;
+                pos.y = 0;
+
+                return pos;
+            }
+
+            // 落ちたポイントを計算
+            private Vector3 calcDropPoint()
+            {
+                if(isReal)
+                {
+                    // 実空間
+                    var trPlayRoom = VRMenuPlugin.Instance.PlayRoom.transform;
+                    var s = trPlayRoom.InverseTransformPoint(transform.position);
+                    var fwd = trPlayRoom.InverseTransformDirection(transform.forward);
+
+                    return trPlayRoom.TransformPoint(calcDropPoint(fwd, s));
+                }
+                else
+                {
+                    // ゲーム内
+                    var s = transform.position;
+                    var fwd = transform.forward;
+
+                    return calcDropPoint(fwd, s);
+                }
+            }
+            /*
             private Vector3 calcPoint()
             {
                 var s = transform.position;
@@ -372,7 +419,7 @@ namespace CM3D2.VRMenu.Plugin
 
                 return pos;
             }
-
+            */
             private void Update()
             {
                 if (isActive == false)
@@ -403,7 +450,7 @@ namespace CM3D2.VRMenu.Plugin
                 {
                     const float speed = 0.3f;
                     isReal = isPressLeft;
-                    var target = calcPoint();
+                    var target = calcDropPoint();
                     if(notReached)
                     {
                         var diff = target - point.transform.position;
@@ -427,14 +474,25 @@ namespace CM3D2.VRMenu.Plugin
                 {
                     if(notReached == false)
                     {
-                        var head = VRMenuPlugin.Instance.Head;
+                        // 頭の位置
+                        var head = VRMenuPlugin.Instance.Head.transform.position;
+
+                        // 頭の床からの相対位置
+                        var trPlayRoom = VRMenuPlugin.Instance.PlayRoom.transform;
+                        Vector3 headFromFloor = Vector3.Project(head - trPlayRoom.position, trPlayRoom.up);
+
+                        if (isReal == false)
+                        {
+                            // ゲーム内の場合はゲーム内y成分のみ
+                            headFromFloor = new Vector3(0, headFromFloor.y, 0);
+                        }
+
                         // 移動先
-                        var target = point.transform.position;
-                        // 高さは実際の高さに合わせる
-                        float roomY = VRMenuPlugin.Instance.PlayRoom.transform.position.y;
-                        target.y = head.transform.position.y - (isReal ? 0 : roomY);
+                        var target = point.transform.position + headFromFloor;
+
                         // 移動量
-                        var diff = target - head.position;
+                        var diff = target - head;
+
                         // 移動を反映させる
                         VRMenuPlugin.Instance.PlayRoomOffset.transform.position += diff;
                     }

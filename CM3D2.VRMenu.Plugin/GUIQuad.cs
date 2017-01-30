@@ -192,8 +192,9 @@ namespace CM3D2.VRMenu.Plugin
                 return;
             }
 
-            if(x >= 0 && x < screenWidth && y >= 0 && y < screenHeight)
-            {
+            // UI上では移動して実際には移動しないのは整合性が取れないのでコメントアウト
+            //if(x >= 0 && x < screenWidth && y >= 0 && y < screenHeight)
+            //{
                 WinAPI.POINT screenPos = new WinAPI.POINT();
                 if (GameMain.Instance.CMSystem.FullScreen)
                 {
@@ -211,7 +212,7 @@ namespace CM3D2.VRMenu.Plugin
                 }
                 WinAPI.ClientToScreen(WinAPI.WindowHandle, ref screenPos);
                 WinAPI.SetCursorPos(screenPos.X, screenPos.Y);
-            }
+            //}
         }
 
         // IMGUIの仮想的な画面サイズ

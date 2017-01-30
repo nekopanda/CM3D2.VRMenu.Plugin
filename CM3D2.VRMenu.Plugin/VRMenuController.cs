@@ -201,7 +201,7 @@ namespace CM3D2.VRMenu.Plugin
             }
         }
 
-        // trueにするとシステムメニュー表示中もクリックしちゃうので注意
+        // trueにするとシステムメニュー表示中以外は常にクリックする
         public bool AlwaysClickableOnGUI = false;
 
         private enum TouchPadState
@@ -247,12 +247,33 @@ namespace CM3D2.VRMenu.Plugin
         // touchingOffGUICo != null: ポインタはGUIから離れたがまだGUIモード中
         // 
         // ポインタの色は isTouchingGUI
-        // マウスポインタ移動は isTouchingGUI || pressedWithTouchingGUI
-        // クリック判定(=GUIモード)は isTouchingGUI || pressedWithTouchingGUI || touchingOffGUICo != null
 
+        // GUIモードか？実際には色々な状態があるので、GUIモードとはどういう状態なのか分からない
         public bool IsGUIMode {
             get {
-                return isTouchingGUI || pressedWithTouchingGUI || touchingOffGUICo != null;
+                return IsRawGUIMode && !Menu.SystemMenuActive;
+            }
+        }
+
+        private bool ShouldMoveMouse {
+            get {
+                // GUIにタッチしていなくてもドラッグ中は移動を継続する
+                return isTouchingGUI || pressedInGUIMode;
+            }
+        }
+
+        private bool IsRawGUIMode {
+            get {
+                // ポインタ移動中に加えて、離れて間もない場合は、準GUIモード
+                return isTouchingGUI || pressedInGUIMode || touchingOffGUICo != null;
+            }
+        }
+
+        // トラックパッドクリックを画面クリックにすべき状態か？
+        public bool IsClickEnabledState {
+            get {
+                // システムメニューが表示されていないことが前提、その上で準GUIモードまたは常にクリックなら
+                return !Menu.SystemMenuActive && (IsRawGUIMode || AlwaysClickableOnGUI);
             }
         }
 
@@ -391,6 +412,13 @@ namespace CM3D2.VRMenu.Plugin
             }
         }
 
+        public void ResetWorldXZ()
+        {
+            var trOffset = VRMenuPlugin.Instance.PlayRoomOffset.transform;
+            var angles = trOffset.rotation.eulerAngles;
+            trOffset.rotation = Quaternion.Euler(0, angles.y, 0);
+        }
+
         private void OnLevelWasLoaded(int level)
         {
             Mode.UpdateForNewScene();
@@ -500,8 +528,8 @@ namespace CM3D2.VRMenu.Plugin
 
                 //beam();
 
-                // GUI操作中は非表示にする
-                Menu.MenuVisible = !IsGUIMode;
+                // GUI操作中はユーザメニューを非表示にする
+                Menu.UserMenuVisible = !IsRawGUIMode;
                 Menu.updateMenu();
 
                 updatePointerPosition();
@@ -525,7 +553,7 @@ namespace CM3D2.VRMenu.Plugin
         private void updatePointerPosition()
         {
             // GUIにタッチしてなくてもドラック中はGUIモードを維持するのでポインタを移動させる
-            if(isTouchingGUI || pressedWithTouchingGUI)
+            if(ShouldMoveMouse)
             {
                 // スクリーン平面はguiQuadのローカル座標でz=0なので、ローカル座標に変換すればxyが計算される
                 //（しかもスケールも考慮されるのでxyは-0.5～+0.5に正規化された値になる）
@@ -547,9 +575,12 @@ namespace CM3D2.VRMenu.Plugin
 
                 UICamera.OvrVirtualMousePos = uipos;
 
+                // UIで実際に移動した位置に更新
+                uipos = UICamera.OvrVirtualMousePos;
+
                 Vector4 imguiVirtualRect = guiQuad.IMGUIVirtualScreenRect;
-                float ix = (pos.x + 0.5f) * imguiVirtualRect.z + imguiVirtualRect.x;
-                float iy = (pos.y + 0.5f) * imguiVirtualRect.w + imguiVirtualRect.y;
+                float ix = (uipos.x / 1280) * imguiVirtualRect.z + imguiVirtualRect.x;
+                float iy = (uipos.y / 720) * imguiVirtualRect.w + imguiVirtualRect.y;
                 guiQuad.MoveCursorTo((int)ix, (int)iy);
 
                 //Log.Out("Stay: [" + (int)x + "," + (int)y + "]");
@@ -599,10 +630,10 @@ namespace CM3D2.VRMenu.Plugin
                 tmp = nextGripTarget;
             }
 
-            if (IsGUIMode || AlwaysClickableOnGUI)
+            if (IsClickEnabledState)
             {
                 isCursorInWindow_ = isCursorInWindow();
-                if (isCursorInWindow_ == false)
+                if (isCursorInWindow_ == false && isTouchingGUI)
                 {
                     color = Color.red;
                 }
@@ -650,7 +681,7 @@ namespace CM3D2.VRMenu.Plugin
         }
 
         private bool leftRightPressed;
-        private bool pressedWithTouchingGUI;
+        private bool pressedInGUIMode;
         private bool leftPressed;
         private bool pressBegining;
         private Coroutine pressWaitAMomentCo;
@@ -683,14 +714,14 @@ namespace CM3D2.VRMenu.Plugin
                         leftPressed = false;
                     }
                     leftRightPressed = true;
-                    pressedWithTouchingGUI = isTouchingGUI;
+                    pressedInGUIMode = (isTouchingGUI && !Menu.SystemMenuActive);
                     pressBegining = true;
                     if (pressWaitAMomentCo != null) {
                         StopCoroutine(pressWaitAMomentCo);
                     }
                     pressWaitAMomentCo = StartCoroutine(pressWaitAMoment());
                 }
-                else if(IsGUIMode)
+                else if(IsClickEnabledState)
                 {
                     Log.Debug("マウスカーソルがゲームウィンドウ上にないためクリックできません！");
                 }
@@ -727,6 +758,28 @@ namespace CM3D2.VRMenu.Plugin
             IntPtr window = WinAPI.WindowFromPoint(mpos);
             if (window == WinAPI.WindowHandle)
             {
+                // ウィンドウの枠もゲームウィンドウと認識されるので、クライアント領域にいるかも見る
+                if(!GameMain.Instance.CMSystem.FullScreen)
+                {
+                    // クライアント領域の縦横取得
+                    WinAPI.RECT rect;
+                    WinAPI.GetClientRect(window, out rect);
+
+                    // クライアント領域左上のスクリーン座標を取得
+                    WinAPI.POINT topleft = new WinAPI.POINT() { X = 0, Y = 0 };
+                    WinAPI.ClientToScreen(window, ref topleft);
+
+                    if( mpos.X >= topleft.X &&
+                        mpos.X < topleft.X + rect.Right &&
+                        mpos.Y >= topleft.Y &&
+                        mpos.Y < topleft.Y + rect.Bottom)
+                    {
+                        return true;
+                    }
+
+                    return false;
+                }
+
                 return true;
             }
             return false;
@@ -743,7 +796,7 @@ namespace CM3D2.VRMenu.Plugin
                 emitMouseEvent(WinAPI.MOUSEEVENTF_RIGHTUP);
             }
             leftRightPressed = false;
-            pressedWithTouchingGUI = false;
+            pressedInGUIMode = false;
             pressBegining = false;
         }
 
@@ -875,24 +928,34 @@ namespace CM3D2.VRMenu.Plugin
 
         private void updateGrip()
         {
-            try { 
-            // 掴んでいたら移動する
-            switch (currentGripTarget)
+            try
             {
-                case GripTarget.GUI:
-                    applyMove(guiQuad.gameObject.transform, false, false, false);
-                    break;
-                case GripTarget.Object:
-                case GripTarget.Maid:
-                case GripTarget.SpawnItem:
-                    applyMove(currentGripObject as Transform, false, isLockAxis, false);
-                    break;
-                case GripTarget.World:
-                    applyMove(VRMenuPlugin.Instance.PlayRoomOffset.transform, true, true, isLockAxis);
-                    break;
+                // 掴んでいたら移動する
+                switch (currentGripTarget)
+                {
+                    case GripTarget.GUI:
+                        applyMove(guiQuad.gameObject.transform, false, false, false);
+                        break;
+                    case GripTarget.Object:
+                    case GripTarget.Maid:
+                    case GripTarget.SpawnItem:
+                        applyMove(currentGripObject as Transform, false, isLockAxis, false);
+                        break;
+                    case GripTarget.World:
+                        if (isLockAxis)
+                        {
+                            applyMove(VRMenuPlugin.Instance.PlayRoomOffset.transform, true,
+                                true, !VRMenuPlugin.Instance.Config.EnableWorldYMove);
+                        }
+                        else
+                        {
+                            applyMove(VRMenuPlugin.Instance.PlayRoomOffset.transform, true, 
+                                !VRMenuPlugin.Instance.Config.EnableWorldXZRotation, false);
+                        }
+                        break;
+                }
             }
-            }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Log.Debug("EXC 1");
                 Log.Debug(e);
@@ -922,11 +985,10 @@ namespace CM3D2.VRMenu.Plugin
                     startByTrigger = isTriggerDown;
                     startByGrip = isGripDown;
                 }
-                else if(Menu.SystemMenuActive)
+                if(Menu.SystemMenuActive)
                 {
                     // システムメニュー表示中はトリガーを無効化
                     startByTrigger = false;
-                    //startByGrip = false;
                 }
             }
 

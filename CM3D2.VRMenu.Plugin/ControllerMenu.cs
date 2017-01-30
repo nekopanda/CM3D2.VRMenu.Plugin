@@ -19,23 +19,22 @@ namespace CM3D2.VRMenu.Plugin
         private List<VRMenuButtons> activeMenu = new List<VRMenuButtons>();
         private Dictionary<VRMenuPage, VRMenuButtons> menuCache = new Dictionary<VRMenuPage, VRMenuButtons>();
 
-        private bool menuVisible_ = false;
-        public bool MenuVisible
+        // システムメニューは非表示にできない
+
+        private bool userMenuVisible_ = false;
+        public bool UserMenuVisible
         {
-            get { return menuVisible_; }
+            get { return userMenuVisible_; }
             set
             {
-                if (menuVisible_ != value)
+                if (userMenuVisible_ != value)
                 {
-                    menuVisible_ = value;
+                    userMenuVisible_ = value;
 
-                    if (SystemMenuActive && currentSystemMenu != null)
+                    // システムメニューがなくて、ユーザメニューがあったら
+                    if (systemMenuActive_ == false && activeMenu.Count > 0)
                     {
-                        currentSystemMenu.gameObject.SetActive(menuVisible_);
-                    }
-                    else if (activeMenu.Count > 0)
-                    {
-                        activeMenu.Last().gameObject.SetActive(menuVisible_);
+                        activeMenu.Last().gameObject.SetActive(userMenuVisible_);
                     }
                 }
             }
@@ -54,22 +53,25 @@ namespace CM3D2.VRMenu.Plugin
                 {
                     systemMenuActive_ = value;
 
-                    if (MenuVisible)
+                    if(currentSystemMenu == null)
                     {
-                        if(currentSystemMenu == null)
-                        {
-                            currentSystemMenu = getButtons(controller.Mode.SystemMenuTop, true);
-                        }
-                        if (currentSystemMenu != null)
-                        {
-                            currentSystemMenu.gameObject.SetActive(systemMenuActive_);
-                        }
-                        if (activeMenu.Count > 0)
-                        {
-                            activeMenu.Last().gameObject.SetActive(!systemMenuActive_);
-                        }
+                        currentSystemMenu = getButtons(controller.Mode.SystemMenuTop, true);
+                    }
+                    if (currentSystemMenu != null)
+                    {
+                        currentSystemMenu.gameObject.SetActive(systemMenuActive_);
+                    }
+                    if (userMenuVisible_ && activeMenu.Count > 0)
+                    {
+                        activeMenu.Last().gameObject.SetActive(!systemMenuActive_);
                     }
                 }
+            }
+        }
+
+        private bool MenuVisible {
+            get {
+                return activeMenu.Count > 0 || (systemMenuActive_ && currentSystemMenu != null);
             }
         }
 

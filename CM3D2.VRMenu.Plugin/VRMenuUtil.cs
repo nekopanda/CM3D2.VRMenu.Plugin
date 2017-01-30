@@ -234,6 +234,9 @@ namespace CM3D2.VRMenu.Plugin
         [DllImport("user32.dll", SetLastError = true)]
         public static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect);
 
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool GetClientRect(IntPtr hwnd, out RECT lpRect);
+
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT
         {
