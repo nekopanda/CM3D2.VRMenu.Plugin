@@ -126,7 +126,12 @@ namespace CM3D2.VRMenu.Plugin
                 if (isLongPressProcessed == false)
                 {
                     float now = Time.realtimeSinceStartup;
-                    if (now - timePrevMenuClick < 0.6f)
+                    if(controller.Device.GetPress(Button.Trigger))
+                    {
+                        // 位置リセット
+                        controller.ResetCamOffset();
+                    }
+                    else if (now - timePrevMenuClick < 0.6f)
                     {
                         isDoubleClicked = true;
                         isClicked = true;

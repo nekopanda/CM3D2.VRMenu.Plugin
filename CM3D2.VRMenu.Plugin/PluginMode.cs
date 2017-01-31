@@ -494,7 +494,7 @@ namespace CM3D2.VRMenu.Plugin
                         var diff = target - head;
 
                         // 移動を反映させる
-                        VRMenuPlugin.Instance.PlayRoomOffset.transform.position += diff;
+                        VRMenuPlugin.Instance.PlayRoomHandle.transform.position += diff;
                     }
 
                     point.SetActive(false);

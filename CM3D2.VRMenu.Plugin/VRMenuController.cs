@@ -411,12 +411,33 @@ namespace CM3D2.VRMenu.Plugin
                 pointerRenderer.sharedMaterial.shader = shader;
             }
         }
-
+        /*
         public void ResetWorldXZ()
         {
-            var trOffset = VRMenuPlugin.Instance.PlayRoomOffset.transform;
+            var trOffset = VRMenuPlugin.Instance.PlayRoomHandle.transform;
             var angles = trOffset.rotation.eulerAngles;
             trOffset.rotation = Quaternion.Euler(0, angles.y, 0);
+        }
+        */
+        public void ResetCamOffset()
+        {
+            releaseGrip();
+
+            // XZ回転しているときはそれだけ戻す
+            var trOffset = VRMenuPlugin.Instance.PlayRoomHandle.transform;
+            var angles = trOffset.rotation.eulerAngles;
+            if(Math.Abs(angles.x) > 0.3 || Math.Abs(angles.z) > 0.3)
+            {
+                trOffset.rotation = Quaternion.Euler(0, angles.y, 0);
+            }
+            else
+            {
+                GameMain.Instance.OvrMgr.OvrCamera.ReCallcOffset();
+
+                var headOffset = VRMenuPlugin.Instance.Config.HeadOffset;
+                var pos = trOffset.position;
+                trOffset.position = new Vector3(pos.x, pos.y + headOffset, pos.z);
+            }
         }
 
         private void OnLevelWasLoaded(int level)
@@ -944,12 +965,12 @@ namespace CM3D2.VRMenu.Plugin
                     case GripTarget.World:
                         if (isLockAxis)
                         {
-                            applyMove(VRMenuPlugin.Instance.PlayRoomOffset.transform, true,
+                            applyMove(VRMenuPlugin.Instance.PlayRoomHandle.transform, true,
                                 true, !VRMenuPlugin.Instance.Config.EnableWorldYMove);
                         }
                         else
                         {
-                            applyMove(VRMenuPlugin.Instance.PlayRoomOffset.transform, true, 
+                            applyMove(VRMenuPlugin.Instance.PlayRoomHandle.transform, true, 
                                 !VRMenuPlugin.Instance.Config.EnableWorldXZRotation, false);
                         }
                         break;

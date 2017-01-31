@@ -25,7 +25,7 @@ namespace CM3D2.VRMenu.Plugin
         PluginFilter("CM3D2VRx64"),
         PluginFilter("CM3D2OHVRx64"),
         PluginName("VRMenuPlugin"),
-        PluginVersion("0.0.2.0")
+        PluginVersion("0.0.2.1")
     ]
     public class VRMenuPlugin : ExPluginBase
     {
@@ -49,7 +49,6 @@ namespace CM3D2.VRMenu.Plugin
             public float PointerSize = 0.02f;
             public float PointerDistance = 0.1f;
             public bool PointerAlwaysVisible = false;
-            // シーン開始時の頭の高さオフセット
             public float HeadOffset = 0;
             public bool EnableLightPhysics = true;
             public bool EnableWorldYMove = false;
@@ -108,7 +107,7 @@ namespace CM3D2.VRMenu.Plugin
         private VRMenuController[] controllers_ = new VRMenuController[(int)Controller.Max];
         public VRMenuController[] Controllers { get { return controllers_; } }
 
-        private GameObject cameraOffset;
+        private GameObject cameraOffsetBase;
         private GameObject cameraRig;
         private GameObject ovrScreen;
 
@@ -140,13 +139,6 @@ namespace CM3D2.VRMenu.Plugin
         // 空間の移動（＝CameraRigの移動）は、まずViveCamOffsetを目的の位置に動かして
         // ViveCamera.Update()でCameraRigの位置をViveCamOffsetの位置に合わせている
         // このとき実際にはViveCamOffsetにぶら下げたBaseオブジェクトのTransformをCameraRigにコピーしてる
-        // CameraRigの位置は実際には床の位置なので、ユーザの頭はそれよりも高いところにある
-        // BaseオブジェクトはCameraRigの位置とユーザの頭の位置(EyeAnchor)の違いを
-        // 吸収するためにあると思われるが、VR ver1.29現在、
-        // 実装が未完成で有効に使われていない状態となっている
-        //
-        // 本プラグインではシーン開始時にBaseオブジェクトを
-        // 現在の頭の位置から逆算した位置に合わせるようにした
         // 
 
         // 自分の頭
@@ -157,9 +149,9 @@ namespace CM3D2.VRMenu.Plugin
         }
 
         // プレイルームを動かすためのハンドル
-        public GameObject PlayRoomOffset {
+        public GameObject PlayRoomHandle {
             get {
-                return cameraOffset;
+                return cameraOffsetBase;
             }
         }
 
@@ -219,6 +211,7 @@ namespace CM3D2.VRMenu.Plugin
             }
         }
 
+        /*
         private Transform m_trOffseBase;
         private void OnLevelWasLoaded(int level)
         {
@@ -229,6 +222,11 @@ namespace CM3D2.VRMenu.Plugin
                 {
                     var camera = GameMain.Instance.OvrMgr.OvrCamera;
                     var field = camera.GetType().GetField("m_trBaseRoomBase", BindingFlags.Instance | BindingFlags.NonPublic);
+                    if(field == null)
+                    {
+                        // ver1.43以前
+                        field = camera.GetType().GetField("m_trOffseBase", BindingFlags.Instance | BindingFlags.NonPublic);
+                    }
                     m_trOffseBase = (Transform)field.GetValue(camera);
                 }
 
@@ -241,6 +239,7 @@ namespace CM3D2.VRMenu.Plugin
                 }
             }
         }
+        */
 
         // 誰よりも早くovr_screenを見つけて非アクティブ化
         private IEnumerator findOvrScreenCo()
@@ -328,7 +327,7 @@ namespace CM3D2.VRMenu.Plugin
             var headOffsetDistance = Helper.InstantiateMenu(pluginRootObj,
                 new {
                     Control = "RepeatButtonsMenu",
-                    Text = "シーン切り替わりでの頭の高さ調整",
+                    Text = "リセット時の頭の高さ調整",
                     Caption = "現在のオフセット: " + (int)Math.Round(Config.HeadOffset * 100) + "cm",
                     AngleOffset = 90,
                     TickMode = "Tick",
@@ -485,24 +484,15 @@ namespace CM3D2.VRMenu.Plugin
                     })
                 };
 
-            var menuResetWorldXZ =
-                new {
-                    Control = "SimpleButton",
-                    Text = "ワールドXZ回転をリセット",
-                    Clicked = (Action<object, object, int>)((_, __, i) => {
-                        Controllers[i].ResetWorldXZ();
-                    })
-                };
-
             var menuGripLeft = Helper.InstantiateMenu(pluginRootObj, createGripMenu(ConfigLeft));
             var menuGripRight = Helper.InstantiateMenu(pluginRootObj, createGripMenu(ConfigRight));
 
             var menuLeft = Helper.InstantiateMenu(pluginRootObj,
                 createPointerMenu(new object[] {
-                    menuPointerVisible, menuGripLeft, menuResetWorldXZ, menuWorldXZ, menuWorldY, detailedSetting }));
+                    menuPointerVisible, menuGripLeft, menuWorldXZ, menuWorldY, detailedSetting }));
             var menuRight = Helper.InstantiateMenu(pluginRootObj,
                 createPointerMenu(new object[] {
-                    menuPointerVisible, menuGripRight, menuResetWorldXZ, menuWorldXZ, menuWorldY, detailedSetting }));
+                    menuPointerVisible, menuGripRight, menuWorldXZ, menuWorldY, detailedSetting }));
 
             Helper.InstallMenuButton(this, menuLeft, menuRight);
         }
@@ -573,15 +563,15 @@ namespace CM3D2.VRMenu.Plugin
         // コントローラをインストール
         private IEnumerator tryInstallCo()
         {
-            cameraOffset = null;
+            cameraOffsetBase = null;
 
             while (true)
             {
-                if (cameraOffset == null)
+                if (cameraOffsetBase == null)
                 {
                     tryGetCamOffset();
                 }
-                if(cameraOffset != null)
+                if(cameraOffsetBase != null)
                 {
                     if (controllers_.Any(s => s == null))
                     {
@@ -601,10 +591,15 @@ namespace CM3D2.VRMenu.Plugin
 
         private void tryGetCamOffset()
         {
-            Transform transform = Util.SearchInChildren(GameMain.Instance.transform, "ViveCamBaseHead", 0, 1);
-            if(transform != null)
+            Transform trCamOffset = Util.SearchInChildren(GameMain.Instance.transform, "BaseRoomBase", 0, 1);
+            if(trCamOffset == null)
             {
-                cameraOffset = transform.gameObject;
+                // ver1.43以前
+                trCamOffset = Util.SearchInChildren(GameMain.Instance.transform, "ViveCamOffset", 0, 1);
+            }
+            if (trCamOffset != null)
+            {
+                cameraOffsetBase = trCamOffset.gameObject;
                 Log.Debug("ViveCamBaseHead found");
             }
         }
