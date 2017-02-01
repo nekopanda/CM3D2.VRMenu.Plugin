@@ -118,7 +118,9 @@ C#のコードを書く必要がありますが、簡単にできます（多分
 
 # インストール
 
-[Releaseページ](https://github.com/nekopanda/CM3D2.VRMenu.Plugin/releases)にあるVRMenuPlugin.zipのSybarisフォルダをコピーすればOK
+[Releaseページ](https://github.com/nekopanda/CM3D2.VRMenu.Plugin/releases)にあるVRMenuPlugin.zipのSybarisフォルダをコピー
+
+PluginExt.dllに依存しています。まだ入れてない方は、[ここ](https://github.com/asm256/ExPluginBase/releases)からDLLを落としてUnityInjectorフォルダに入れておいてください。
 
 最小構成で使いたい場合は、 `CM3D2.VRMenu.Plugin.Patcher.dll` と `CM3D2.VRMenu.Plugin.dll` だけあれば使えます。他の各ファイルは以下の通り
 
