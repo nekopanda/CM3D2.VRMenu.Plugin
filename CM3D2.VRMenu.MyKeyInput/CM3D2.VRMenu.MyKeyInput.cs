@@ -1,10 +1,10 @@
-﻿using PluginExt;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
+using UnityInjector;
 using UnityInjector.Attributes;
 
 namespace CM3D2.VRMenu.MyKeyInput
@@ -13,9 +13,9 @@ namespace CM3D2.VRMenu.MyKeyInput
         PluginFilter("CM3D2VRx64"),
         PluginFilter("CM3D2OHVRx64"),
         PluginName("VRMenuMyKeyInput"),
-        PluginVersion("0.0.1.0")
+        PluginVersion("0.0.2.2")
     ]
-    public class VRMenuMyKeyInput : ExPluginBase
+    public class VRMenuMyKeyInput : PluginBase
     {
         private void Start()
         {
