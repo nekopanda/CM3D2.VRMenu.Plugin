@@ -25,7 +25,7 @@ namespace CM3D2.VRMenu.Plugin
         PluginFilter("CM3D2VRx64"),
         PluginFilter("CM3D2OHVRx64"),
         PluginName("VRMenuPlugin"),
-        PluginVersion("0.0.2.1")
+        PluginVersion("0.0.2.2")
     ]
     public class VRMenuPlugin : ExPluginBase
     {

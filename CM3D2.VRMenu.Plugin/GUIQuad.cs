@@ -32,6 +32,8 @@ namespace CM3D2.VRMenu.Plugin
         private int screenWidth;
         private int screenHeight;
 
+        private bool IsCursorUnlocked = false;
+
         private bool visible_;
         public bool Visible {
             get {
@@ -121,11 +123,24 @@ namespace CM3D2.VRMenu.Plugin
                 RenderTexture.active = prevRenderTexture;
             }
         }
-        
+
         #endregion
 
         private void Update()
         {
+            if (Input.GetKeyUp(KeyCode.Escape))
+            {
+                IsCursorUnlocked = true;
+            }
+            else if (IsCursorUnlocked && Input.GetMouseButtonUp(0))
+            {
+                var mousePos = Input.mousePosition;
+                if (mousePos.x >= 0 && mousePos.x < Screen.width && mousePos.y >= 0 && mousePos.y < Screen.height)
+                {
+                    IsCursorUnlocked = false;
+                }
+            }
+
             if (uiMaterial == null)
             {
                 // シェーダがないと何も出来ない
@@ -192,27 +207,34 @@ namespace CM3D2.VRMenu.Plugin
                 return;
             }
 
+            if(IsCursorUnlocked)
+            {
+                // 追随しない
+                return;
+            }
+
             // UI上では移動して実際には移動しないのは整合性が取れないのでコメントアウト
             //if(x >= 0 && x < screenWidth && y >= 0 && y < screenHeight)
             //{
-                WinAPI.POINT screenPos = new WinAPI.POINT();
-                if (GameMain.Instance.CMSystem.FullScreen)
-                {
-                    WinAPI.RECT rect;
-                    WinAPI.GetWindowRect(WinAPI.WindowHandle, out rect);
-                    float w = rect.Right - rect.Left;
-                    float h = rect.Bottom - rect.Top;
-                    screenPos.X = (int)(x * (w / screenWidth));
-                    screenPos.Y = (int)(h - y * (h / screenHeight));
-                }
-                else
-                {
-                    screenPos.X = x;
-                    screenPos.Y = screenHeight - y;
-                }
-                WinAPI.ClientToScreen(WinAPI.WindowHandle, ref screenPos);
-                WinAPI.SetCursorPos(screenPos.X, screenPos.Y);
-            //}
+            WinAPI.POINT screenPos = new WinAPI.POINT();
+            // これだとフルスクリーンになっていない場合がある
+            //if (GameMain.Instance.CMSystem.FullScreen)
+            if (Screen.fullScreen)
+            {
+                WinAPI.RECT rect;
+                WinAPI.GetWindowRect(WinAPI.WindowHandle, out rect);
+                float w = rect.Right - rect.Left;
+                float h = rect.Bottom - rect.Top;
+                screenPos.X = (int)(x * (w / screenWidth));
+                screenPos.Y = (int)(h - y * (h / screenHeight));
+            }
+            else
+            {
+                screenPos.X = x;
+                screenPos.Y = screenHeight - y;
+            }
+            WinAPI.ClientToScreen(WinAPI.WindowHandle, ref screenPos);
+            WinAPI.SetCursorPos(screenPos.X, screenPos.Y);
         }
 
         // IMGUIの仮想的な画面サイズ
