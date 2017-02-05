@@ -307,8 +307,6 @@ namespace CM3D2.VRMenu.Plugin
                     guiQuad.transform.position = head.TransformPoint(new Vector3(0, 0, 0.3f));
                     guiQuad.transform.rotation = Quaternion.LookRotation(head.forward);
 
-                    guiQuad.Visible = true;
-
                     //printCollisionMatrix();
                 }
                 else
@@ -676,6 +674,8 @@ namespace CM3D2.VRMenu.Plugin
                 guiQuad.transform.position = transform.TransformPoint(new Vector3(0, 0, 0.2f));
                 // 60度上を向かせる
                 guiQuad.transform.rotation = Quaternion.LookRotation(transform.forward) * Quaternion.Euler(60,0,0);
+                // 非表示になっていたら表示する
+                guiQuad.Visible = true;
             }
         }
 

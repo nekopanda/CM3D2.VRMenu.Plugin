@@ -176,8 +176,8 @@ namespace CM3D2.VRMenu.Plugin
     {
         private static string[] EmptyString = new string[0];
 
-        public bool IsDiableGripByTrigger { get { return false; } }
-        public bool IsDiableGripByGrip { get { return false; } }
+        public bool IsDiableGripByTrigger { get { return VRMenuPlugin.Instance.Config.DisableButtonsInYotogiMode; } }
+        public bool IsDiableGripByGrip { get { return VRMenuPlugin.Instance.Config.DisableButtonsInYotogiMode; } }
         
         public bool IsEnabled {
             get {
@@ -513,16 +513,9 @@ namespace CM3D2.VRMenu.Plugin
                 state = VRMenuPlugin.Instance.Controllers[(int)controller].gameObject.AddComponent<State>();
                 stateList[(int)controller] = state;
             }
-            state.SetInputActive(true);
         }
         public void OnDeactivated(Controller controller)
-        {
-            State state = stateList[(int)controller];
-            if (state != null)
-            {
-                state.SetInputActive(false);
-            }
-        }
+        { }
         public void OnTouchPadState(Controller controller, bool enable)
         {
             State state = stateList[(int)controller];

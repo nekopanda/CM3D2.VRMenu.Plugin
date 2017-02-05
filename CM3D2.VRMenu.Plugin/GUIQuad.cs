@@ -23,6 +23,8 @@ namespace CM3D2.VRMenu.Plugin
             }
         }
 
+        private static readonly Vector3 ColliderScale = new Vector3(1, 1, 0.07f);
+
         private GameObject ovr_screen;
 
         private RenderTexture rtIMGUI;
@@ -34,7 +36,7 @@ namespace CM3D2.VRMenu.Plugin
 
         private bool IsCursorUnlocked = false;
 
-        private bool visible_;
+        private bool visible_ = true;
         public bool Visible {
             get {
                 return visible_;
@@ -64,7 +66,7 @@ namespace CM3D2.VRMenu.Plugin
                 go.name = "VRMenu GUIQuad";
                 go.GetComponent<MeshCollider>().enabled = false;
                 BoxCollider collider = go.AddComponent<BoxCollider>();
-                collider.size = new Vector3(1, 1, 0.07f);
+                collider.size = ColliderScale;
                 // raycast使わないけど一応・・・
                 go.layer = LayerMask.NameToLayer("Ignore Raycast");
                 instance_ = go.AddComponent<GUIQuad>();
@@ -100,6 +102,11 @@ namespace CM3D2.VRMenu.Plugin
             float y = quadSize;
             float x = quadSize * ((float)1280 / 720);
             gameObject.transform.localScale = new Vector3(x, y, 1);
+        }
+
+        public void ToggleUI()
+        {
+            Visible = !Visible;
         }
 
         #region IMGUIをrtIMGUIにレンダリング
@@ -160,7 +167,7 @@ namespace CM3D2.VRMenu.Plugin
                     rtOVRUI = ovr_screen.GetComponentInChildren<MeshRenderer>().material.mainTexture as RenderTexture;
                     uiMaterial.SetTexture("_SecondTex", rtOVRUI);
                     
-                    switchVisiblity(visible_);
+                    //switchVisiblity(visible_);
                 }
             }
             if(rtOVRUI != null)
@@ -175,12 +182,6 @@ namespace CM3D2.VRMenu.Plugin
                 if (rtIMGUI.IsCreated() == false)
                 {
                     rtIMGUI.Create();
-                }
-
-                if(gameObject.activeSelf == ovr_screen.activeSelf)
-                {
-                    // 整合性を取る
-                    ovr_screen.SetActive(!gameObject.activeSelf);
                 }
             }
         }
@@ -202,6 +203,11 @@ namespace CM3D2.VRMenu.Plugin
 
         public void MoveCursorTo(int x, int y)
         {
+            if(gameObject.activeSelf == false)
+            {
+                return;
+            }
+
             if(WinAPI.WindowHandle == IntPtr.Zero)
             {
                 return;
@@ -269,10 +275,17 @@ namespace CM3D2.VRMenu.Plugin
 
         private void switchVisiblity(bool visilbe)
         {
-            if (ovr_screen != null)
+            if(visilbe)
             {
-                gameObject.SetActive(visilbe);
-                ovr_screen.SetActive(!visilbe);
+                Log.Debug("Enabled GUIQuad");
+                gameObject.GetComponent<BoxCollider>().size = ColliderScale;
+                gameObject.GetComponent<MeshRenderer>().enabled = true;
+            }
+            else
+            {
+                Log.Debug("Disabled GUIQuad");
+                gameObject.GetComponent<BoxCollider>().size = new Vector3(0.0001f, 0.0001f, 0.0001f);
+                gameObject.GetComponent<MeshRenderer>().enabled = false;
             }
         }
     }

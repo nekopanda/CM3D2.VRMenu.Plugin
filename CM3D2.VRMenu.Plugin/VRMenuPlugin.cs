@@ -25,10 +25,12 @@ namespace CM3D2.VRMenu.Plugin
         PluginFilter("CM3D2VRx64"),
         PluginFilter("CM3D2OHVRx64"),
         PluginName("VRMenuPlugin"),
-        PluginVersion("0.0.2.2")
+        PluginVersion("0.0.3.0")
     ]
     public class VRMenuPlugin : ExPluginBase
     {
+        #region フィールドとプロパティ
+
         private static VRMenuPlugin instance_;
         public static VRMenuPlugin Instance { get { return instance_; } }
 
@@ -53,6 +55,11 @@ namespace CM3D2.VRMenu.Plugin
             public bool EnableLightPhysics = true;
             public bool EnableWorldYMove = false;
             public bool EnableWorldXZRotation = false;
+
+            public bool EnableExtendFarClipPlane = false;
+            public float ExtendedFarClipPlane = 500;
+
+            public bool DisableButtonsInYotogiMode = true;
         }
 
         private PluginConfig config_;
@@ -144,6 +151,10 @@ namespace CM3D2.VRMenu.Plugin
         // 自分の頭
         public Transform Head {
             get {
+                if(GameMain.Instance.OvrMgr == null)
+                {
+                    return null;
+                }
                 return GameMain.Instance.OvrMgr.EyeAnchor;
             }
         }
@@ -170,6 +181,8 @@ namespace CM3D2.VRMenu.Plugin
         }
 
         private Type lightPhysics;
+
+        #endregion
 
         // Use this for initialization
         void Start()
@@ -210,36 +223,73 @@ namespace CM3D2.VRMenu.Plugin
                 lightPhysics.GetProperty("Enable").SetValue(null, Config.EnableLightPhysics, null);
             }
         }
-
-        /*
-        private Transform m_trOffseBase;
+        
         private void OnLevelWasLoaded(int level)
         {
-            // シーン開始時にオフセットベースを頭の位置に合わせて調整
-            if(PlayRoom != null)
+            if(camera != null)
             {
-                if(m_trOffseBase == null)
-                {
-                    var camera = GameMain.Instance.OvrMgr.OvrCamera;
-                    var field = camera.GetType().GetField("m_trBaseRoomBase", BindingFlags.Instance | BindingFlags.NonPublic);
-                    if(field == null)
-                    {
-                        // ver1.43以前
-                        field = camera.GetType().GetField("m_trOffseBase", BindingFlags.Instance | BindingFlags.NonPublic);
-                    }
-                    m_trOffseBase = (Transform)field.GetValue(camera);
-                }
+                Log.Debug("FarClipPlane: " + camera.farClipPlane);
+            }
+        }
 
-                if(m_trOffseBase != null)
+        private Camera camera;
+        private float initialFarClipPlane;
+        private void SetFarClipPlane()
+        {
+            if (camera == null)
+            {
+                if (Head != null)
                 {
-                    var headToPlayRoom = PlayRoom.transform.position - Head.position;
-                    headToPlayRoom.y += Config.HeadOffset;
-                    var pos = m_trOffseBase.localPosition;
-                    m_trOffseBase.localPosition = new Vector3(0, headToPlayRoom.y, 0);
+                    camera = Head.gameObject.GetComponent<Camera>();
+                    initialFarClipPlane = camera.farClipPlane;
+                }
+            }
+            if (camera != null)
+            {
+                var extended = Config.EnableExtendFarClipPlane
+                    ? Config.ExtendedFarClipPlane
+                    : initialFarClipPlane;
+                if (camera.farClipPlane != extended)
+                {
+                    Log.Debug("FarClipPlaneを変更します " + camera.farClipPlane + " -> " + extended);
+                    camera.farClipPlane = extended;
                 }
             }
         }
-        */
+
+        private Vector2 vMouseMoved = Vector2.zero;
+        private void UpdateToggleUI()
+        {
+            // 右クリックでGUIの表示・非表示切り替え
+            if (Input.GetMouseButton(1))
+            {
+                vMouseMoved += new Vector2(Math.Abs(Input.GetAxis("Mouse X")), Math.Abs(Input.GetAxis("Mouse Y")));
+            }
+            else if (Input.GetMouseButtonUp(1))
+            {
+                var camera = GameMain.Instance.MainCamera as OvrCamera;
+                if (camera != null)
+                {
+                    var fieldFallThrough = camera.GetType().GetField(
+                            "m_bFallThrough", BindingFlags.NonPublic | BindingFlags.Instance);
+                    if ((bool)fieldFallThrough.GetValue(camera) && vMouseMoved.magnitude < 3f)
+                    {
+                        GUIQuad.Instance.ToggleUI();
+                    }
+                }
+                vMouseMoved = Vector2.zero;
+            }
+        }
+
+        private void Update()
+        {
+            if(Config.EnableExtendFarClipPlane)
+            {
+                SetFarClipPlane();
+            }
+
+            UpdateToggleUI();
+        }
 
         // 誰よりも早くovr_screenを見つけて非アクティブ化
         private IEnumerator findOvrScreenCo()
@@ -295,6 +345,8 @@ namespace CM3D2.VRMenu.Plugin
                 Log.Debug("FOUND !!!");
             }
         }
+
+        #region 設定メニュー
 
         private void createSettingMenu()
         {
@@ -352,7 +404,7 @@ namespace CM3D2.VRMenu.Plugin
 
             if (lightPhysics != null)
             {
-                var lightPhysicsEnable =
+                var lightPhysicsEnable = Helper.InstantiateMenu(pluginRootObj,
                     new {
                         Control = "ToggleButton",
                         TextOn = "LightPhysics:有効",
@@ -363,10 +415,59 @@ namespace CM3D2.VRMenu.Plugin
                             IsNeedWriteConfig = true;
                             setLightyPhysics();
                         })
-                    };
+                    });
 
                 settingList.Add(lightPhysicsEnable);
             }
+
+            var farClipSetting = Helper.InstantiateMenu(pluginRootObj,
+                new {
+                    Control = "RepeatButtonsMenu",
+                    Text = "表示限界拡張",
+                    Caption = "表示限界: " + (int)Config.ExtendedFarClipPlane,
+                    TickMode = "Tick",
+                    OnTick = (Action<object, int, int>)((m, _, i) => {
+                        if (i == 0) return;
+                        float current = Config.ExtendedFarClipPlane;
+                        float diff = 2 * ((i == 1) ? -1 : 1);
+                        float next = Math.Max(Math.Min(current + diff, 4000), 10);
+                        Config.ExtendedFarClipPlane = next;
+                        IsNeedWriteConfig = true;
+
+                        ((RepeatButtonsMenu)m).Caption = "表示限界: " + (int)next;
+                    }),
+                    Items = new object[] {
+                        new {
+                            Control = "ToggleButton",
+                            TextOn = "表示限界拡張:ON",
+                            TextOff = "表示限界拡張:OFF",
+                            Getter = (Func<object, bool>)(_ => Config.EnableExtendFarClipPlane),
+                            Setter = (Action<object, bool>)((_, v) => {
+                                Config.EnableExtendFarClipPlane = v;
+                                IsNeedWriteConfig = true;
+                                SetFarClipPlane();
+                            })
+                        },
+                        "小さくする",
+                        "大きくする"
+                    }
+                });
+
+            settingList.Add(farClipSetting);
+
+            var yotogiDisableButtonsSeting = Helper.InstantiateMenu(pluginRootObj,
+                new {
+                    Control = "ToggleButton",
+                    TextOn = "夜伽モード時は掴み無効",
+                    TextOff = "夜伽モード時も掴み有効",
+                    Getter = (Func<object, bool>)(_ => Config.DisableButtonsInYotogiMode),
+                    Setter = (Action<object, bool>)((_, v) => {
+                        Config.DisableButtonsInYotogiMode = v;
+                        IsNeedWriteConfig = true;
+                    })
+                });
+
+            settingList.Add(yotogiDisableButtonsSeting);
 
             var settingMenu = Helper.InstantiateMenu(pluginRootObj, new {
                 Name = "VRMenu設定",
@@ -544,6 +645,8 @@ namespace CM3D2.VRMenu.Plugin
             };
         }
 
+        #endregion
+
         // 設定が変更されていたらファイルに書き込み
         private IEnumerator writeConfigCo()
         {
@@ -559,6 +662,8 @@ namespace CM3D2.VRMenu.Plugin
                 yield return new WaitForSeconds(2);
             }
         }
+
+        #region コントローラインストール
 
         // コントローラをインストール
         private IEnumerator tryInstallCo()
@@ -642,5 +747,7 @@ namespace CM3D2.VRMenu.Plugin
                 }
             }
         }
+
+        #endregion
     }
 }

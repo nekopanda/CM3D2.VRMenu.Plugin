@@ -269,6 +269,7 @@ namespace CM3D2.VRMenu.Plugin
         protected List<IMenuButton> buttons = new List<IMenuButton>();
         protected IMenuButton[] enabledButtons = null;
         private ButtonHelper buttonHelper = new ButtonHelper();
+        private VRMenu[] parentMenu = new VRMenu[(int)Controller.Max];
 
         public string Name { get; set; }
 
@@ -286,14 +287,22 @@ namespace CM3D2.VRMenu.Plugin
 
         public int Metric { get; set; }
 
-        public VRMenu ParentMenu { get; protected set; }
-
         protected bool IsNeedUpdate;
 
         public VRMenu()
         {
             Texts = new string[0];
             ToggleState = new bool[0];
+        }
+
+        public VRMenu GetParent(Controller controller)
+        {
+            return parentMenu[(int)controller];
+        }
+
+        protected void SetParent(Controller controller, VRMenu parent)
+        {
+            parentMenu[(int)controller] = parent;
         }
 
         public void Reset()
@@ -409,7 +418,7 @@ namespace CM3D2.VRMenu.Plugin
         // 親メニューから選択されたとき
         public void OnButtonClicked(VRMenu menu, Controller controllerId)
         {
-            ParentMenu = menu;
+            SetParent(controllerId, menu);
 
             var controller = VRMenuPlugin.Instance.Controllers[(int)controllerId];
             if (IsSystemMenu(controller))
@@ -426,25 +435,31 @@ namespace CM3D2.VRMenu.Plugin
         private bool IsSystemMenu(VRMenuController controller)
         {
             VRMenu menu = this;
-            while(menu.ParentMenu != null)
+            while(true)
             {
-                menu = menu.ParentMenu;
+                var parent = menu.GetParent(controller.ControllerId);
+                if(parent == null)
+                {
+                    break;
+                }
+                menu = parent;
             }
             return menu == controller.Mode.SystemMenuTop;
         }
 
         public void BackMenu(VRMenuController controller)
         {
-            if(ParentMenu != null)
+            var parent = GetParent(controller.ControllerId);
+            if (parent != null)
             {
                 if (IsSystemMenu(controller))
                 {
-                    controller.Menu.SetSystemMenu(ParentMenu);
+                    controller.Menu.SetSystemMenu(parent);
                 }
                 else
                 {
                     controller.Menu.SetUserMenuVisiblity(this, false);
-                    controller.Menu.SetUserMenuVisiblity(ParentMenu, true);
+                    controller.Menu.SetUserMenuVisiblity(parent, true);
                 }
             }
         }
