@@ -11,6 +11,16 @@ namespace CM3D2.VRMenu.Plugin
 {
     public class ContollerHacker
     {
+        public enum OvrControllerMode
+        {
+            GRAB,
+            MOUSE_POINTER,
+            MOVE,
+            CAMERA,
+            ITEM,
+            MAX
+        }
+
         public enum Item
         {
             Controller, Sticklight, VibePink, AnalVibe
@@ -22,7 +32,7 @@ namespace CM3D2.VRMenu.Plugin
         }
 
         private SteamVR_TrackedObject trackedObject;
-        private ViveController viveController;
+        private ViveControllerBehavior viveController;
 
         private SteamVR_Controller.Device Device {
             get {
@@ -34,11 +44,17 @@ namespace CM3D2.VRMenu.Plugin
 
         private FieldInfo pressMenuBtnLongField;
         private FieldInfo modeField;
+        private Type modeEnum;
         private FieldInfo textModeField;
 
-        private ViveController.OvrControllerMode ModeField {
-            get { return (ViveController.OvrControllerMode)modeField.GetValue(viveController); }
-            set { modeField.SetValue(viveController, value); }
+        private OvrControllerMode ModeField {
+            get { return (OvrControllerMode)(int)modeField.GetValue(viveController); }
+            set { modeField.SetValue(viveController, Enum.ToObject(modeEnum, (int)value)); }
+        }
+
+        private void ChangeInternalMode(OvrControllerMode mode)
+        {
+            changeModeMethod.Invoke(viveController, new object[] { Enum.ToObject(modeEnum, (int)mode) });
         }
 
         private string TextMode
@@ -60,7 +76,7 @@ namespace CM3D2.VRMenu.Plugin
         }
 
         private OvrHandItemMgr handItem;
-        private ViveController.OvrControllerMode currentTargetMode = ViveController.OvrControllerMode.MOUSE_POINTER;
+        private OvrControllerMode currentTargetMode = OvrControllerMode.MOUSE_POINTER;
 
         private bool disableInput_ = false;
         public bool DisableInput {
@@ -70,12 +86,12 @@ namespace CM3D2.VRMenu.Plugin
                 {
                     disableInput_ = value;
 
-                    if (currentTargetMode != ViveController.OvrControllerMode.MAX)
+                    if (currentTargetMode != OvrControllerMode.MAX)
                     {
                         if (disableInput_)
                         {
                             // MAXにして反応しなくする
-                            ModeField = ViveController.OvrControllerMode.MAX;
+                            ModeField = OvrControllerMode.MAX;
                         }
                         else
                         {
@@ -92,7 +108,7 @@ namespace CM3D2.VRMenu.Plugin
         public ContollerHacker(GameObject controllerObject)
         {
             trackedObject = controllerObject.GetComponent<SteamVR_TrackedObject>();
-            viveController = controllerObject.GetComponent<ViveController>();
+            viveController = controllerObject.GetComponent<ViveControllerBehavior>();
 
             AddMaxModeText();
 
@@ -108,6 +124,9 @@ namespace CM3D2.VRMenu.Plugin
 
             modeField = viveController.GetType().GetField("m_eMode",
                 BindingFlags.NonPublic | BindingFlags.Instance);
+
+            modeEnum = viveController.GetType().GetNestedType("OvrControllerMode",
+                BindingFlags.NonPublic);
 
             textModeField = viveController.GetType().GetField("m_txMode",
                 BindingFlags.NonPublic | BindingFlags.Instance);
@@ -149,7 +168,7 @@ namespace CM3D2.VRMenu.Plugin
             DisableInput = false;
             if(item == Item.Controller)
             {
-                changeModeMethod.Invoke(viveController, new object[] { ViveController.OvrControllerMode.MAX });
+                ChangeInternalMode(OvrControllerMode.MAX);
                 TextMode = text_;
             }
             else
@@ -158,8 +177,8 @@ namespace CM3D2.VRMenu.Plugin
                 if(modelIndex < handItem.ModelNum)
                 {
                     handItem.ChangeModel(modelIndex);
-                    currentTargetMode = ViveController.OvrControllerMode.ITEM;
-                    changeModeMethod.Invoke(viveController, new object[] { ViveController.OvrControllerMode.ITEM });
+                    currentTargetMode = OvrControllerMode.ITEM;
+                    ChangeInternalMode(OvrControllerMode.ITEM);
 
                     if(firstChangeItem)
                     {
@@ -187,25 +206,25 @@ namespace CM3D2.VRMenu.Plugin
                 //Log.Out("None以外へのモード変更は予期しない動作を引き起こします！！");
             }
             DisableInput = false;
-            ViveController.OvrControllerMode newMode;
+            OvrControllerMode newMode;
             if (mode == Mode.Grab)
             {
-                newMode = ViveController.OvrControllerMode.GRAB;
+                newMode = OvrControllerMode.GRAB;
             }
             else if (mode == Mode.Pointer)
             {
-                newMode = ViveController.OvrControllerMode.MOUSE_POINTER;
+                newMode = OvrControllerMode.MOUSE_POINTER;
             }
             else if (mode == Mode.Camera)
             {
-                newMode = ViveController.OvrControllerMode.CAMERA;
+                newMode = OvrControllerMode.CAMERA;
             }
             else if(mode == Mode.None)
             {
-                newMode = ViveController.OvrControllerMode.MAX;
+                newMode = OvrControllerMode.MAX;
             }
             else {
-                newMode = ViveController.OvrControllerMode.MOVE;
+                newMode = OvrControllerMode.MOVE;
                 if (mode == Mode.MoveDir)
                 {
                     GameMain.Instance.CMSystem.OvrMoveMode = 0;
@@ -218,9 +237,9 @@ namespace CM3D2.VRMenu.Plugin
             if(newMode != currentTargetMode)
             {
                 currentTargetMode = newMode;
-                changeModeMethod.Invoke(viveController, new object[] { currentTargetMode });
+                ChangeInternalMode(currentTargetMode);
 
-                if(viveController.enabled == false)
+                if (viveController.enabled == false)
                 {
                     // なぜかdisableになることがある？？
                     Log.Debug("ViveController disabled !!!!! Force enable it!");

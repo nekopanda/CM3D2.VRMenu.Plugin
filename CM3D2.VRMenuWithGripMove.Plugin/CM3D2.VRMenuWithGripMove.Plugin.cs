@@ -15,7 +15,7 @@ namespace CM3D2.VRMenu.Plugin
         PluginFilter("CM3D2VRx64"),
         PluginFilter("CM3D2OHVRx64"),
         PluginName("VRMenuWithGripMovePlugin"),
-        PluginVersion("0.0.1.0")
+        PluginVersion("0.0.3.1")
     ]
     public class VRMenuWithGripMovePlugin : ExPluginBase
     {

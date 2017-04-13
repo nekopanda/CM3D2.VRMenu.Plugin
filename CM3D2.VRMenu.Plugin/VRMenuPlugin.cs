@@ -25,7 +25,7 @@ namespace CM3D2.VRMenu.Plugin
         PluginFilter("CM3D2VRx64"),
         PluginFilter("CM3D2OHVRx64"),
         PluginName("VRMenuPlugin"),
-        PluginVersion("0.0.3.0")
+        PluginVersion("0.0.3.1")
     ]
     public class VRMenuPlugin : ExPluginBase
     {
@@ -729,17 +729,17 @@ namespace CM3D2.VRMenu.Plugin
             var ovr_obj = GameMain.Instance.OvrMgr.ovr_obj;
             if (ovr_obj != null)
             {
-                if (controllers_[(int)Controller.Left] == null && ovr_obj.left_controller.track_object != null)
+                if (controllers_[(int)Controller.Left] == null && ovr_obj.left_controller.hand_trans != null)
                 {
-                    GameObject left = ovr_obj.left_controller.track_object.gameObject;
+                    GameObject left = ovr_obj.left_controller.hand_trans.gameObject;
                     if (left != null)
                     {
                         installControllerVIVE(left, Controller.Left);
                     }
                 }
-                if (controllers_[(int)Controller.Right] == null && ovr_obj.right_controller.track_object != null)
+                if (controllers_[(int)Controller.Right] == null && ovr_obj.right_controller.hand_trans != null)
                 {
-                    GameObject right = ovr_obj.right_controller.track_object.gameObject;
+                    GameObject right = ovr_obj.right_controller.hand_trans.gameObject;
                     if (right != null)
                     {
                         installControllerVIVE(right, Controller.Right);

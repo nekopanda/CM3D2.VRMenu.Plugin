@@ -63,6 +63,7 @@ namespace CM3D2.VRMenu.Plugin
             public MeshRenderer boxRenderer;
             public BoxCollider boxCollider;
             public TMorph morph;
+            public List<UnityEngine.Object> listDEL;
             public GameObject holder {
                 get {
                     return itemObject.transform.parent.gameObject;
@@ -298,7 +299,8 @@ namespace CM3D2.VRMenu.Plugin
         public bool SpawnItem(ItemData itemData)
         {
             TMorph morph;
-            GameObject newItem = itemLoader.LoadCM3D2Item(itemData.rawbytes, out morph);
+            List<UnityEngine.Object> listDEL = new List<UnityEngine.Object>();
+            GameObject newItem = itemLoader.LoadCM3D2Item(itemData.rawbytes, out morph, listDEL);
             if (newItem != null)
             {
                 // 移動するためのゲームオブジェクト
@@ -336,6 +338,7 @@ namespace CM3D2.VRMenu.Plugin
                     itemObject = newItem,
                     boxRenderer = box.GetComponent<MeshRenderer>(),
                     boxCollider = box.GetComponent<BoxCollider>(),
+                    listDEL = listDEL,
                     morph = morph
                 });
 
@@ -353,6 +356,11 @@ namespace CM3D2.VRMenu.Plugin
             {
                 // holderから削除
                 GameObject.Destroy(CurrentItems[itemIndex].itemObject.transform.parent.gameObject);
+                // 関連オブジェクトを削除
+                foreach(var obj in CurrentItems[itemIndex].listDEL)
+                {
+                    GameObject.Destroy(obj);
+                }
                 CurrentItems.RemoveAt(itemIndex);
                 ++UpdateCounter;
                 return true;
@@ -468,13 +476,14 @@ namespace CM3D2.VRMenu.Plugin
             }
         }
 
-        public GameObject LoadCM3D2Item(byte[] menuData, out TMorph morph)
+        public GameObject LoadCM3D2Item(byte[] menuData, out TMorph morph, List<UnityEngine.Object> listDEL)
         {
             newItem = null;
             
             // アイテムは体に付けるものなのでその体を作っておく
             CreateDummyBody();
 
+            bodySlot.listDEL = listDEL;
             LoadCM3D2ItemInternal(menuData);
 
             if(newItem != null)

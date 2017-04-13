@@ -14,7 +14,7 @@ namespace CM3D2.VRMenu.MyKeyInput
         PluginFilter("CM3D2VRx64"),
         PluginFilter("CM3D2OHVRx64"),
         PluginName("VRMenuMyKeyInput"),
-        PluginVersion("0.0.3.0")
+        PluginVersion("0.0.3.1")
     ]
     public class VRMenuMyKeyInput : PluginBase
     {
