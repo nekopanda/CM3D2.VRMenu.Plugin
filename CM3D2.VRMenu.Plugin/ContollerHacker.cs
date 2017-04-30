@@ -103,6 +103,12 @@ namespace CM3D2.VRMenu.Plugin
             }
         }
 
+        public bool IsRegacyMode {
+            get {
+                return viveController.enabled;
+            }
+        }
+
         private bool firstChangeItem = true;
 
         public ContollerHacker(GameObject controllerObject)

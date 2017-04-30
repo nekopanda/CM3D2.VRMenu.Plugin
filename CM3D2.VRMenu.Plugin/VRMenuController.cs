@@ -56,6 +56,21 @@ namespace CM3D2.VRMenu.Plugin
 
         public Controller ControllerId;
 
+        public bool isEnabled_ = true;
+        public bool IsEnabled {
+            get {
+                return isEnabled_;
+            }
+            set {
+                if(isEnabled_ != value)
+                {
+                    pointerObj.SetActive(value);
+                    guiQuad.Visible = value;
+                    isEnabled_ = value;
+                }
+            }
+        }
+
         private ControllerMode mode_;
         public ControllerMode Mode {
             get {
@@ -478,6 +493,7 @@ namespace CM3D2.VRMenu.Plugin
                     // いくつの子GameObjectと接触してるかをカウントする
 
                     touchingObjects.Add(target);
+                    Log.Debug("TriggerEnter " + target.name);
                 }
 
                 foreach (var handler in gripHandlers)
@@ -524,6 +540,7 @@ namespace CM3D2.VRMenu.Plugin
                 if (target != null)
                 {
                     touchingObjects.Remove(target);
+                    Log.Debug("TriggerExit " + target.name);
                 }
 
                 foreach (var handler in gripHandlers)
@@ -551,17 +568,20 @@ namespace CM3D2.VRMenu.Plugin
                 Menu.UserMenuVisible = !IsRawGUIMode;
                 Menu.updateMenu();
 
-                updatePointerPosition();
+                if(IsEnabled)
+                {
+                    updatePointerPosition();
 
-                updateGripTarget();
+                    updateGripTarget();
 
-                updateGrip();
+                    updateGrip();
 
-                updatePointerState();
+                    updatePointerState();
 
-                updateTouchPadClick();
+                    updateTouchPadClick();
 
-                updateTouchPadState();
+                    updateTouchPadState();
+                }
             }
             catch (Exception e)
             {

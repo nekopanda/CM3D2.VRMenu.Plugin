@@ -17,13 +17,13 @@ namespace CM3D2.VRMenu.Plugin.Patcher
         public static void Patch(AssemblyDefinition assembly)
         {
             // プラグインフィルタ
-            string[] supportExeNames = new string[] {
-                "CM3D2VRx64", "CM3D2OHVRx64"
-            };
-            if (!supportExeNames.Contains(Process.GetCurrentProcess().ProcessName))
-            {
-                return;
-            }
+            //string[] supportExeNames = new string[] {
+            //    "CM3D2VRx64", "CM3D2OHVRx64"
+            //};
+            //if (!supportExeNames.Contains(Process.GetCurrentProcess().ProcessName))
+            //{
+            //    return;
+            //}
 
             Patch_(assembly);
         }

@@ -11,8 +11,6 @@ using UnityInjector.Attributes;
 namespace CM3D2.VRMenu.MyKeyInput
 {
     [
-        PluginFilter("CM3D2VRx64"),
-        PluginFilter("CM3D2OHVRx64"),
         PluginName("VRMenuMyKeyInput"),
         PluginVersion("0.0.3.1")
     ]
@@ -20,8 +18,12 @@ namespace CM3D2.VRMenu.MyKeyInput
     {
         private void Start()
         {
+            if (GameMain.Instance.VRMode == false)
+            {
+                return;
+            }
             var type = Type.GetType("CM3D2.VRMenu.Plugin.Helper, CM3D2.VRMenu.Plugin");
-            if(type == null)
+            if (type == null)
             {
                 Console.WriteLine("[VRMenuMyKeyInput] VRMenuプラグインが読み込めないため無効化されました");
                 return;

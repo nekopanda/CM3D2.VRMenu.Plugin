@@ -22,8 +22,6 @@ namespace CM3D2.VRMenu.Plugin
     }
 
     [
-        PluginFilter("CM3D2VRx64"),
-        PluginFilter("CM3D2OHVRx64"),
         PluginName("VRMenuPlugin"),
         PluginVersion("0.0.3.1")
     ]
@@ -188,6 +186,11 @@ namespace CM3D2.VRMenu.Plugin
         void Start()
         {
             DontDestroyOnLoad(gameObject);
+
+            if(GameMain.Instance.VRMode == false)
+            {
+                return;
+            }
 
             pluginRootObj = new GameObject("VRMenuPlugin");
             pluginRootObj.transform.parent = transform;

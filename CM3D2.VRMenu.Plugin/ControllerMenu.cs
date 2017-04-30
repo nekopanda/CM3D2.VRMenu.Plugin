@@ -128,8 +128,19 @@ namespace CM3D2.VRMenu.Plugin
                     float now = Time.realtimeSinceStartup;
                     if(controller.Device.GetPress(Button.Trigger))
                     {
-                        // 位置リセット
-                        controller.ResetCamOffset();
+                        if(controller.IsEnabled == false)
+                        {
+                            controller.IsEnabled = true;
+                        }
+                        else if(controller.Hacker.IsRegacyMode == false)
+                        {
+                            controller.IsEnabled = false;
+                        }
+                        else
+                        {
+                            // 位置リセット
+                            controller.ResetCamOffset();
+                        }
                     }
                     else if (now - timePrevMenuClick < 0.6f)
                     {
@@ -143,6 +154,11 @@ namespace CM3D2.VRMenu.Plugin
                         timePrevMenuClick = now;
                     }
                 }
+            }
+
+            if(controller.IsEnabled == false)
+            {
+                return;
             }
 
             if(isDoubleClicked)

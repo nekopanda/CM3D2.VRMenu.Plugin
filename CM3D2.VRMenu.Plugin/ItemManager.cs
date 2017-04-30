@@ -87,10 +87,7 @@ namespace CM3D2.VRMenu.Plugin
                     {
                         try
                         {
-                            byte[] data = ImportCM.LoadTexture(texfilename);
-                            Texture2D texture2D = new Texture2D(50, 50, TextureFormat.RGBA32, false);
-                            texture2D.LoadImage(data);
-                            tex_ = texture2D;
+                            tex_ = ImportCM.LoadTexture(texfilename, true).CreateTexture2D();
                         }
                         catch(Exception)
                         {
