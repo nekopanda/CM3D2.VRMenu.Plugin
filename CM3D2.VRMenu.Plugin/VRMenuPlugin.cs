@@ -23,7 +23,7 @@ namespace CM3D2.VRMenu.Plugin
 
     [
         PluginName("VRMenuPlugin"),
-        PluginVersion("0.0.3.1")
+        PluginVersion("0.0.3.3")
     ]
     public class VRMenuPlugin : ExPluginBase
     {
@@ -286,7 +286,11 @@ namespace CM3D2.VRMenu.Plugin
 
         private void Update()
         {
-            if(Config.EnableExtendFarClipPlane)
+            if (GameMain.Instance.VRMode == false)
+            {
+                return;
+            }
+            if (Config.EnableExtendFarClipPlane)
             {
                 SetFarClipPlane();
             }

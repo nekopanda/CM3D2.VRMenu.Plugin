@@ -597,6 +597,8 @@ namespace CM3D2.VRMenu.Plugin
                 // スクリーン平面はguiQuadのローカル座標でz=0なので、ローカル座標に変換すればxyが計算される
                 //（しかもスケールも考慮されるのでxyは-0.5～+0.5に正規化された値になる）
                 Vector3 pos = guiQuad.transform.InverseTransformPoint(pointerObj.transform.position);
+                var uicamera = GameMain.Instance.OvrMgr.SystemUICamera;
+                bool isLeft = (ControllerId == Controller.Left);
 
                 float x = (pos.x + 0.5f) * 1280;
                 float y = (pos.y + 0.5f) * 720;
@@ -604,7 +606,7 @@ namespace CM3D2.VRMenu.Plugin
 
                 if (pressBegining)
                 {
-                    if(Vector3.Distance(uipos, UICamera.OvrVirtualMousePos) < 20)
+                    if(Vector3.Distance(uipos, uicamera.GetOvrVirtualMousePos(isLeft)) < 20)
                     {
                         // クリックし始めは一定距離以上でないと動かさない
                         return;
@@ -612,10 +614,10 @@ namespace CM3D2.VRMenu.Plugin
                     pressBegining = false;
                 }
 
-                UICamera.OvrVirtualMousePos = uipos;
+                uicamera.SetOvrVirtualMousePos(isLeft, uipos);
 
                 // UIで実際に移動した位置に更新
-                uipos = UICamera.OvrVirtualMousePos;
+                uipos = uicamera.GetOvrVirtualMousePos(isLeft);
 
                 Vector4 imguiVirtualRect = guiQuad.IMGUIVirtualScreenRect;
                 float ix = (uipos.x / 1280) * imguiVirtualRect.z + imguiVirtualRect.x;
@@ -660,6 +662,7 @@ namespace CM3D2.VRMenu.Plugin
         }
 
         private GripTarget tmp;
+        private bool prevRawGUIMode = false;
         private void updatePointerState()
         {
             Color color = GripTargetColorMap[(int)nextGripTarget];
@@ -667,6 +670,14 @@ namespace CM3D2.VRMenu.Plugin
             if(tmp != nextGripTarget)
             {
                 tmp = nextGripTarget;
+            }
+
+            bool nextGUIMode = IsRawGUIMode || AlwaysClickableOnGUI;
+            if(prevRawGUIMode != nextGUIMode)
+            {
+                prevRawGUIMode = nextGUIMode;
+                GameMain.Instance.OvrMgr.SystemUICamera.SetActiveVirtualCursorObjByNocurrent(
+                    (ControllerId == Controller.Left) ? UICamera.VCURSOR.LEFT : UICamera.VCURSOR.RIGHT, nextGUIMode);
             }
 
             if (IsClickEnabledState)
@@ -744,6 +755,9 @@ namespace CM3D2.VRMenu.Plugin
                 // GUIモードかつマウスが画面内にあるときだけ
                 if (isCursorInWindow_)
                 {
+                    GameMain.Instance.OvrMgr.SystemUICamera.SetCurrentCursorSide(
+                        (ControllerId == Controller.Left) ? UICamera.VCURSOR.LEFT : UICamera.VCURSOR.RIGHT);
+
                     if (leftDown)
                     {
                         emitMouseEvent(WinAPI.MOUSEEVENTF_LEFTDOWN);
