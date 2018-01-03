@@ -11,7 +11,7 @@ namespace CM3D2.PrintException.Plugin
     [PluginName("PrintException"), PluginVersion("0.0.1.0")]
     public class PrintException : PluginBase
     {
-        void Start()
+        PrintException()
         {
             // 例外の詳細情報を吐かせる
             Application.logMessageReceived += Application_logMessageReceived;

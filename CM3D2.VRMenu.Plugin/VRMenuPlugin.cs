@@ -23,7 +23,7 @@ namespace CM3D2.VRMenu.Plugin
 
     [
         PluginName("VRMenuPlugin"),
-        PluginVersion("0.0.3.3")
+        PluginVersion("0.0.3.4")
     ]
     public class VRMenuPlugin : ExPluginBase
     {
@@ -286,7 +286,7 @@ namespace CM3D2.VRMenu.Plugin
 
         private void Update()
         {
-            if (GameMain.Instance.VRMode == false)
+            if (instance_ == null)
             {
                 return;
             }

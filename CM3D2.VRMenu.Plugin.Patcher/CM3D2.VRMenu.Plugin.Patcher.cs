@@ -46,7 +46,7 @@ namespace CM3D2.VRMenu.Plugin.Patcher
             // GameMain.Update()のカーソル非表示ロジックを無効化 //
 
             var typeGameMain = assembly.MainModule.GetType("GameMain");
-            var updateMethod = typeGameMain.Methods.FirstOrDefault(method => method.Name == "Update");
+            var updateMethod = typeGameMain.Methods.FirstOrDefault(method => method.Name == "Update" || method.Name == "Update_orig");
             if (updateMethod != null)
             {
                 var processor = updateMethod.Body.GetILProcessor();

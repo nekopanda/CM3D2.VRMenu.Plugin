@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CM3D2.PrintException.Plugin</RootNamespace>
-    <AssemblyName>CM3D2.PrintException.Plugin</AssemblyName>
+    <AssemblyName>_CM3D2.PrintException.Plugin</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
