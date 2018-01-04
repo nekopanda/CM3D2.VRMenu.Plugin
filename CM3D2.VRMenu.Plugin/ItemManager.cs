@@ -390,9 +390,12 @@ namespace CM3D2.VRMenu.Plugin
                 return;
             }
 
-            dummyBody = new GameObject("PhotoModeVRMenuBody").AddComponent<TBody>();
+            var go = new GameObject("PhotoModeVRMenuBody");
+            var maid = go.AddComponent<Maid>();
+            maid.enabled = false;
+            dummyBody = go.AddComponent<TBody>();
             dummyBody.transform.parent = plugin.transform;
-            dummyBody.Init(null);
+            dummyBody.Init(maid);
             dummyBody.enabled = false;
 
             int slotNo = (int)TBody.hashSlotName[dummySlotName];
@@ -467,8 +470,26 @@ namespace CM3D2.VRMenu.Plugin
                 }
                 catch (Exception ex)
                 {
-                    NDebug.Assert("メニューファイル処理中にエラーが発生しました。" + Path.GetFileName(path));
-                    throw ex;
+                    try
+                    {
+                        // 作成途中のオブジェクトは削除する
+                        if (newItem != null)
+                        {
+                            GameObject.Destroy(newItem);
+                        }
+                        // 関連オブジェクトを削除
+                        foreach (var obj in bodySlot.listDEL)
+                        {
+                            GameObject.Destroy(obj);
+                        }
+                        bodySlot.listDEL.Clear();
+                    }
+                    catch (Exception) { }
+
+                    newItem = null;
+
+                    UnityEngine.Debug.LogError("メニューファイル処理中にエラーが発生しました。" +
+                        Path.GetFileName(path) + "\r\n -> " + ex.Message + "\r\n" + ex.StackTrace);
                 }
             }
         }
